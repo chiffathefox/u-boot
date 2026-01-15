@@ -117,6 +117,8 @@ _samsung_clk_register_pll(struct udevice *dev, void __iomem *base,
 	clk->flags = pll_clk->flags;
 
 	switch (pll_clk->type) {
+	case pll_0817x:
+	case pll_0818x:
 	case pll_0822x:
 	case pll_1417x:
 		drv_name = UBOOT_DM_CLK_SAMSUNG_PLL0822X;
