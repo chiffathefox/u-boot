@@ -354,7 +354,7 @@ int board_early_init_f(void)
 	 * For variants with more memory, the previous bootloader should
 	 * overlay the devicetree with the required extra memory ranges.
 	 */
-	exynos_parse_dram_banks(board_info, (const void *)get_prev_bl_fdt_addr());
+	// exynos_parse_dram_banks(board_info, (const void *)get_prev_bl_fdt_addr());
 
 	return 0;
 }
