@@ -410,6 +410,6 @@ int misc_init_r(void)
 	snprintf(buf, sizeof(buf), "exynos/%s-%s.dtb", board_info->chip,
 		 board_info->name);
 	env_set("fdtfile", buf);
-
-	return exynos_fastboot_setup();
+return 0;
+	// return exynos_fastboot_setup();
 }
