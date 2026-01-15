@@ -58,6 +58,10 @@ static const u64 exynos7870_common_dram_bank_bases[CONFIG_NR_DRAM_BANKS] = {
 	0x40000000, 0x80000000, 0x100000000,
 };
 
+static const u64 exynos9820_common_dram_bank_bases[CONFIG_NR_DRAM_BANKS] = {
+	0x80000000, 0x880000000, 0x900000000,
+};
+
 static const char *exynos_prev_bl_get_bootargs(void)
 {
 	void *prev_bl_fdt_base = (void *)get_prev_bl_fdt_addr();
@@ -181,7 +185,7 @@ static struct exynos_board_info exynos_board_info_match[] = {
 		/* Samsung Galaxy S10 */
 		.name = "beyond1lte",
 		.chip = "exynos9820",
-		.dram_bank_bases = exynos7870_common_dram_bank_bases,
+		.dram_bank_bases = exynos9820_common_dram_bank_bases,
 		.match = exynos7870_fdt_match,
 		.match_model = "G973",
 		.match_max_rev = U8_MAX,
@@ -201,7 +205,7 @@ static void exynos_parse_dram_banks(const struct exynos_board_info *board_info,
 	/* #address-cells and #size-cells as defined in the fdt root. */
 	na = fdt_address_cells(fdt_base, 0);
 	ns = fdt_size_cells(fdt_base, 0);
-
+log_debug("%s: %d, na = %u, ns = %u\n", __func__, __LINE__, na, ns);
 	fdt_for_each_subnode(offset, fdt_base, 0) {
 		if (strncmp(fdt_get_name(fdt_base, offset, NULL), "memory", 6))
 			continue;
