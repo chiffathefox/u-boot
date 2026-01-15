@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+/*
+ * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ *
+ * Device Tree binding constants for Exynos9820 clock controller.
+ */
+
+#ifndef _DT_BINDINGS_CLOCK_EXYNOS_9820_H
+#define _DT_BINDINGS_CLOCK_EXYNOS_9820_H
+
+/* CMU_CMU */
+#define CLK_DOUT_CMU_SHARED0_PLL_DIV4		1
+#define CLK_DOUT_CMU_SHARED0_PLL_DIV2		2
+#define CLK_MOUT_CMU_SHARED0_PLL		3
+#define CLK_FOUT_CMU_SHARED0_PLL		4
+#define CLK_FOUT_CMU_SHARED0_APLL		5
+#define CLK_DOUT_CMU_SHARED2_PLL_DIV2		6
+#define CLK_FOUT_CMU_SHARED2_PLL		7
+#define CLK_MOUT_CMU_PERIC0_PERI		8
+#define CLK_GOUT_CMU_PERIC0_PERI		9
+#define CLK_DOUT_CMU_PERIC0_PERI		10
+#define CLK_MOUT_CMU_PERIC0_UART0		11
+
+/* CMU_PERIC0 */
+#define CLK_GOUT_PERIC0_UART0_PCLK		2
+#define CLK_GOUT_PERIC0_BUS			5
+#define CLK_MOUT_PERIC0_BUS_USER		3
+#define CLK_MOUT_PERIC0_BUS			6
+#define CLK_DOUT_PERIC0_BUS			4
+#define CLK_DOUT_PERIC0_UART0_SCLK		7
+
+#endif /* _DT_BINDINGS_CLOCK_EXYNOS_9820_H */

@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
+/*
+ * Samsung Galaxy S10 (beyond1lte/SM-G973F) device tree source
+ *
+ * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ */
+
+/dts-v1/;
+#include "exynos9820.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "Samsung Galaxy S10 (SM-G973F)";
+	compatible = "samsung,beyond1lte", "samsung,exynos9820";
+	chassis-type = "handset";
+
+	chosen {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+		bootargs = "console=ttySAC0,115200n8 earlyprintk loglevel=8";
+		stdout-path = &serial0;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x80000000>,
+		      <0x00000008 0x80000000 0x80000000>,
+		      <0x00000009 0x00000000 0x80000000>;
+	};
+};
+
+&oscclk {
+	clock-frequency = <26000000>;
+};
+
+&serial0 {
+	status = "okay";
+};

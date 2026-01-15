@@ -1,0 +1,244 @@
+// SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
+/*
+ * Samsung Exynos 9820 SoC device tree source
+ *
+ * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ */
+
+#include <dt-bindings/clock/exynos9820.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/exynos9820.h>
+
+/ {
+	compatible = "samsung,exynos9820";
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+#if 0
+	interrupt-parent = <&gic>;
+#endif
+	aliases {
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <&cpu0>;
+				};
+				core1 {
+					cpu = <&cpu1>;
+				};
+				core2 {
+					cpu = <&cpu2>;
+				};
+				core3 {
+					cpu = <&cpu3>;
+				};
+			};
+
+			cluster1 {
+				core0 {
+					cpu = <&cpu4>;
+				};
+				core1 {
+					cpu = <&cpu5>;
+				};
+			};
+
+			cluster2 {
+				core0 {
+					cpu = <&cpu6>;
+				};
+				core1 {
+					cpu = <&cpu7>;
+				};
+			};
+		};
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x0>;
+			enable-method = "psci";
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x1>;
+			enable-method = "psci";
+		};
+
+		cpu2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x2>;
+			enable-method = "psci";
+		};
+
+		cpu3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a55";
+			reg = <0x3>;
+			enable-method = "psci";
+		};
+
+		cpu4: cpu@4 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a75";
+			reg = <0x4>;
+			enable-method = "psci";
+		};
+
+		cpu5: cpu@5 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a75";
+			reg = <0x5>;
+			enable-method = "psci";
+		};
+
+		cpu6: cpu@100 {
+			device_type = "cpu";
+			compatible = "samsung,mongoose-m4";
+			reg = <0x100>;
+			enable-method = "psci";
+		};
+
+		cpu7: cpu@101 {
+			device_type = "cpu";
+			compatible = "samsung,mongoose-m4";
+			reg = <0x101>;
+			enable-method = "psci";
+		};
+	};
+
+	oscclk: osc-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-output-names = "oscclk";
+	};
+
+#if 0
+	uart0_pclk: uart0-pclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-output-names = "uart0-pclk";
+	};
+
+	uart0_uclk: uart0-uclk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-output-names = "uart0-uclk";
+	};
+#endif
+
+	/* TODO: A55 PMU */
+	/* TODO: A75 PMU */
+	/* TODO: Mongoose M4 PMU */
+
+	psci {
+		compatible = "arm,psci";
+		method = "smc";
+		cpu_suspend = <0xc4000001>;
+		cpu_off = <0x84000002>;
+		cpu_on = <0xc4000003>;
+	};
+
+	soc: soc@0 {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x0 0x0 0x20000000>;
+
+#if 0
+		chipid@10000000 {
+			compatible = "samsung,exynos9810-chipid",
+				     "samsung,exynos850-chipid";
+			reg = <0x10000000 0x100>;
+		};
+#endif
+#if 0
+		gic: interrupt-controller@10100000 {
+			compatible = "arm,gic-400";
+
+			#interrupt-cells = <3>;
+			#address-cells = <0>;
+
+			interrupt-controller;
+			reg = <0x10101000 0x1000>,
+			      <0x10102000 0x1000>,
+			      <0x10104000 0x2000>,
+			      <0x10106000 0x2000>;
+			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(8) |
+						 IRQ_TYPE_LEVEL_HIGH)>;
+		};
+#endif
+
+		cmu_peric0: clock-controller@10400000 {
+			compatible = "samsung,exynos9820-cmu-peric0";
+			reg = <0x10400000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "cmu_peric0_uart0";
+			clocks = <&oscclk>,
+				 <&cmu_cmu CLK_MOUT_CMU_PERIC0_UART0>;
+		};
+
+		serial0: serial@10440000 {
+			compatible = "samsung,exynos7870-uart",
+				     "samsung,exynos8895-uart";
+			reg = <0x10440000 0x100>;
+#if 0
+			interrupts = <GIC_SPI INTREQ__UART_DBG IRQ_TYPE_LEVEL_HIGH>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart0_bus>;
+#endif
+
+			clock-names = "uart",
+				      "clk_uart_baud0";
+			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_UART0_PCLK>,
+				 <&cmu_peric0 CLK_DOUT_PERIC0_UART0_SCLK>;
+
+			samsung,uart-fifosize = <256>;
+
+			status = "disabled";
+		};
+
+		cmu_cmu: clock-controller@1a240000 {
+			compatible = "samsung,exynos9820-cmu-cmu";
+			reg = <0x1a240000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk";
+			clocks = <&oscclk>;
+		};
+
+		/* TODO: interrupts, add driver support */
+		/* TODO: pinctrl */
+		/* TODO: pmu_system_controller */
+		/* TODO: DMA */
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+		/* Hypervisor Virtual Timer interrupt is not wired to GIC */
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			    	 <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			    	 <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
+			    	 <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>;
+		/*
+		 * Non-updatable, broken stock Samsung bootloader does not
+		 * configure CNTFRQ_EL0
+		 */
+		clock-frequency = <26000000>;
+	};
+};
+
+#include "exynos9820-pinctrl.dtsi"
+//#include "arm/samsung/exynos-syscon-restart.dtsi"

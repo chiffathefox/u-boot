@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
+/*
+ * Samsung's Exynos 9820 SoC pin-mux and pin-config device tree source
+ *
+ * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ */
+
+#include "exynos-pinctrl.h"
