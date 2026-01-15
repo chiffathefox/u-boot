@@ -177,6 +177,14 @@ static struct exynos_board_info exynos_board_info_match[] = {
 		.match = exynos7870_fdt_match,
 		.match_model = "G610",
 		.match_max_rev = U8_MAX,
+	}, {
+		/* Samsung Galaxy S10 */
+		.name = "beyond1lte",
+		.chip = "exynos9820",
+		.dram_bank_bases = exynos7870_common_dram_bank_bases,
+		.match = exynos7870_fdt_match,
+		.match_model = "G973",
+		.match_max_rev = U8_MAX,
 	},
 };
 
