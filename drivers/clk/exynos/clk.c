@@ -19,7 +19,6 @@ int samsung_clk_request(struct clk *clk)
 	if (ret)
 		return ret;
 
-	clk->dev = c->dev;
 	return 0;
 }
 
