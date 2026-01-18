@@ -274,6 +274,13 @@
 		pmu_system_controller: system-controller@15860000 {
 			compatible = "samsung,exynos9820-pmu", "syscon";
 			reg = <0x15860000 0x10000>;
+
+			reboot: syscon-reboot {
+				compatible = "syscon-reboot";
+				regmap = <&pmu_system_controller>;
+				offset = <0x3A00>; /* SWRESET */
+				mask = <0x2>;
+			};
 		};
 
 		/* TODO: interrupts, add driver support */
