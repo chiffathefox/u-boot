@@ -9,6 +9,8 @@
 #ifndef _UFS_EXYNOS_H_
 #define _UFS_EXYNOS_H_
 
+#include "ufs-exynos-dbg.h"
+
 /*
  * Component registers
  */
@@ -207,6 +209,8 @@ struct ufs_phy_time_cfg {
 
 struct exynos_ufs {
 	struct ufs_hba *hba;
+	struct phy phy;
+	struct exynos_ufs_debug debug;
 	void __iomem *reg_hci;
 	void __iomem *reg_unipro;
 	void __iomem *reg_ufsp;

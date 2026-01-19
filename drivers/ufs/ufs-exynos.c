@@ -78,17 +78,21 @@
 #define UNIPRO_MCLK_STOP	BIT(1)
 #define UNIPRO_PCLK_STOP	BIT(0)
 #define CLK_STOP_MASK		(REFCLKOUT_STOP | REFCLK_STOP |\
-				 UNIPRO_MCLK_STOP | MPHY_APBCLK_STOP|\
+				 UNIPRO_MCLK_STOP | \
 				 UNIPRO_PCLK_STOP)
 /* HCI_MISC is also known as HCI_FORCE_HCS */
 #define HCI_MISC		0xB4
+#define REFCLKOUT_STOP_EN	BIT(11)
+#define MPHY_APBCLK_STOP_EN	BIT(10)
+#define UFSP_DRCG_EN		BIT(8)   //FMP
 #define REFCLK_CTRL_EN		BIT(7)
 #define UNIPRO_PCLK_CTRL_EN	BIT(6)
 #define UNIPRO_MCLK_CTRL_EN	BIT(5)
 #define HCI_CORECLK_CTRL_EN	BIT(4)
 #define CLK_CTRL_EN_MASK	(REFCLK_CTRL_EN |\
 				 UNIPRO_PCLK_CTRL_EN |\
-				 UNIPRO_MCLK_CTRL_EN)
+				 UNIPRO_MCLK_CTRL_EN |\
+				/*ugly*/ REFCLKOUT_STOP_EN | MPHY_APBCLK_STOP_EN | UFSP_DRCG_EN)
 
 #define HCI_IOP_ACG_DISABLE	0x100
 #define HCI_IOP_ACG_DISABLE_EN	BIT(0)
@@ -236,6 +240,17 @@ static int exynos_ufs_shareability(struct exynos_ufs *ufs)
 	}
 
 	return 0;
+}
+
+static int exynos9820_ufs_drv_init(struct exynos_ufs *ufs)
+{
+	u32 reg;
+
+	/* set ACG to be controlled by UFS_ACG_DISABLE */
+	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+
+	return exynos_ufs_shareability(ufs);
 }
 
 static int gs101_ufs_drv_init(struct exynos_ufs *ufs)
@@ -403,6 +418,25 @@ static void exynos_ufs_ctrl_clkstop(struct exynos_ufs *ufs, bool en)
 		hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
 		hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
 	}
+}
+
+
+#define HCI_UFS_ACG_DISABLE		0xFC
+#define HCI_UFS_ACG_DISABLE_EN		BIT(0)
+inline void exynos_ufs_set_hwacg_control(struct exynos_ufs *ufs, bool en)
+{
+	u32 reg;
+
+	/*
+	 * default value 1->0 at KC. so,
+	 * need to set "1(disable HWACG)" during UFS init
+	 */
+	reg = hci_readl(ufs, HCI_UFS_ACG_DISABLE);
+	if (en)
+		hci_writel(ufs, reg & (~HCI_UFS_ACG_DISABLE_EN), HCI_UFS_ACG_DISABLE);
+	else
+		hci_writel(ufs, reg | HCI_UFS_ACG_DISABLE_EN, HCI_UFS_ACG_DISABLE);
+
 }
 
 static int exynos_ufs_get_clk_info(struct exynos_ufs *ufs)
@@ -724,7 +758,6 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 {
 	struct ufs_hba *hba = ufs->hba;
 	struct udevice *dev = hba->dev;
-	struct phy phy;
 	int ret = 0;
 
 	if (ufs->avail_ln_rx == 0 || ufs->avail_ln_tx == 0) {
@@ -737,27 +770,27 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 			ufs->avail_ln_rx, ufs->avail_ln_tx);
 	}
 
-	ret = generic_phy_get_by_name(dev, "ufs-phy", &phy);
+	ret = generic_phy_get_by_name(dev, "ufs-phy", &ufs->phy);
 	if (ret) {
 		dev_err(dev, "failed to get ufs-phy, ret = %d\n", ret);
 		return ret;
 	}
 
-	ret = generic_phy_init(&phy);
+	ret = generic_phy_init(&ufs->phy);
 	if (ret) {
 		dev_err(dev, "%s: phy init failed, ret = %d\n",
 			__func__, ret);
 		return ret;
 	}
 
-	ret = generic_phy_power_on(&phy);
+	ret = generic_phy_power_on(&ufs->phy);
 	if (ret)
 		goto out_exit_phy;
 
 	return 0;
 
 out_exit_phy:
-	generic_phy_exit(&phy);
+	generic_phy_exit(&ufs->phy);
 
 	return ret;
 }
@@ -816,6 +849,7 @@ static int exynos_ufs_setup_clocks(struct ufs_hba *hba, bool on,
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
 			exynos_ufs_disable_auto_ctrl_hcc(ufs);
 		exynos_ufs_ungate_clks(ufs);
+		exynos_ufs_set_hwacg_control(ufs, false);
 	} else if (!on && status == POST_CHANGE) {
 		exynos_ufs_gate_clks(ufs);
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
@@ -929,6 +963,8 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 		}
 	}
 
+	generic_phy_configure(&ufs->phy, NULL); // should be calibrate
+
 	if (ufs->drv_data->post_link)
 		ufs->drv_data->post_link(ufs);
 
@@ -954,14 +990,9 @@ static int exynos_ufs_parse_dt(struct udevice *dev, struct exynos_ufs *ufs)
 	ufs->sysreg = syscon_regmap_lookup_by_phandle(dev, "samsung,sysreg");
 	if (IS_ERR(ufs->sysreg))
 		ufs->sysreg = NULL;
-	else {
-		if (dev_read_u32(dev, "samsung,sysreg", &ufs->iocc_offset)) {
-			dev_warn(
-				dev,
-				"can't get an offset from sysreg. Set to default value\n");
-			ufs->iocc_offset = UFS_SHAREABILITY_OFFSET;
-		}
-	}
+	else
+		ufs->iocc_offset = dev_read_u32_index_default(
+			dev, "samsung,sysreg", 1, UFS_SHAREABILITY_OFFSET);
 
 	ufs->iocc_mask = ufs->drv_data->iocc_mask;
 	/*
@@ -972,6 +1003,8 @@ static int exynos_ufs_parse_dt(struct udevice *dev, struct exynos_ufs *ufs)
 		ufs->iocc_val = ufs->iocc_mask;
 	else
 		ufs->iocc_val = 0;
+
+	log_debug("%s: iocc_mask = %X, iocc_val = %X\n", __func__, ufs->iocc_mask, ufs->iocc_val);
 
 	ufs->pclk_avail_min = PCLK_AVAIL_MIN;
 	ufs->pclk_avail_max = PCLK_AVAIL_MAX;
@@ -1214,10 +1247,6 @@ static void exynos_ufs_fmp_init(struct ufs_hba *hba, struct exynos_ufs *ufs)
 {
 }
 
-static void exynos_ufs_fmp_resume(struct ufs_hba *hba)
-{
-}
-
 #define exynos_ufs_fmp_fill_prdt NULL
 
 #endif /* !CONFIG_SCSI_UFS_CRYPTO */
@@ -1278,6 +1307,7 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	exynos_ufs_specify_phy_time_attr(ufs);
 
 	exynos_ufs_config_smu(ufs);
+	exynos_ufs_debug_init(&ufs->debug, hba);
 
 	return 0;
 }
@@ -1587,6 +1617,123 @@ static int gs101_ufs_post_link(struct exynos_ufs *ufs)
 	return 0;
 }
 
+static int exynos9820_ufs_pre_link(struct exynos_ufs *ufs)
+{
+	log_debug("%s: ...\n", __func__);
+	struct ufs_hba *hba = ufs->hba;
+	int i;
+	u32 tx_line_reset_period, rx_line_reset_period;
+
+	rx_line_reset_period = (RX_LINE_RESET_TIME * ufs->mclk_rate)
+				/ NSEC_PER_MSEC;
+	tx_line_reset_period = (TX_LINE_RESET_TIME * ufs->mclk_rate)
+				/ NSEC_PER_MSEC;
+
+	unipro_writel(ufs, get_mclk_period_unipro_18(ufs), COMP_CLK_PERIOD);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x200), 0x40);
+
+	for_each_ufs_rx_lane(ufs, i) {
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_CLK_PRD, i),
+			       DIV_ROUND_UP(NSEC_PER_SEC, ufs->mclk_rate));
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_CLK_PRD_EN, i), 0x0);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE2, i),
+			       (rx_line_reset_period >> 16) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE1, i),
+			       (rx_line_reset_period >> 8) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE0, i),
+			       (rx_line_reset_period) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x2f, i), 0x79);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x76, i), 0x3);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x84, i), 0x1);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x25, i), 0xf6);
+	}
+
+	for_each_ufs_tx_lane(ufs, i) {
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_CLK_PRD, i),
+			       DIV_ROUND_UP(NSEC_PER_SEC, ufs->mclk_rate));
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_CLK_PRD_EN, i),
+			       0x02);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE2, i),
+			       (tx_line_reset_period >> 16) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE1, i),
+			       (tx_line_reset_period >> 8) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE0, i),
+			       (tx_line_reset_period) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x04, i), 1);
+		// ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x7F, i), 0);
+	}
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x200), 0x0);
+	
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_LOCAL_TX_LCC_ENABLE), 0x0);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(N_DEVICEID), 0x0);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(N_DEVICEID_VALID), 0x1);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(T_PEERDEVICEID), 0x1);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(T_CONNECTIONSTATE), CPORT_CONNECTED);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x8000);
+
+	return 0;
+}
+
+static void exynos9820_unipro_adapt_length(struct ufs_hba *hba, u32 addr)
+{
+	u32 value;
+
+	ufshcd_dme_get(hba, UIC_ARG_MIB(addr), &value);
+	if (value & 0x80) {
+		if ((value & 0x7F) < 2)
+			ufshcd_dme_set(hba, UIC_ARG_MIB(addr), 0x82);
+	} else {
+		if (((value + 1) % 4) != 0) {
+			do {
+				value++;
+			} while (((value + 1) % 4) != 0);
+			ufshcd_dme_set(hba, UIC_ARG_MIB(addr), value);
+		}
+	}
+}
+
+static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
+{
+	struct ufs_hba *hba = ufs->hba;
+
+	exynos9820_unipro_adapt_length(hba, 0x15D2);
+	exynos9820_unipro_adapt_length(hba, 0x15D3);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x01);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SAVECONFIGTIME), 0x3E8);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x00);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x80000000);
+	udelay(0x7d0);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x0);
+
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTRL_NEXUS_TYPE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTMRL_NEXUS_TYPE);
+
+	/*
+	 * Enable Write Line Unique. This field has to be 0x3
+	 * to support Write Line Unique transaction on gs101.
+	 */
+	hci_writel(ufs, WLU_EN | WLU_BURST_LEN(3), HCI_AXIDMA_RWDATA_BURST_LEN);
+
+	exynos_ufs_enable_dbg_mode(hba);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SAVECONFIGTIME), 0x3e8);
+	exynos_ufs_disable_dbg_mode(hba);
+
+	struct ufs_pa_layer_attr *p = &hba->pwr_info;
+	log_debug("%s: gear_rx = %u, gear_tx = %u, lane_rx = %u, lane_tx = %u, "
+		  "pwr_rx = %u, pwr_tx = %u, hs_rate = %u, avail_ln_rx = %d, "
+		  "avail_ln_tx = %d\n",
+		  __func__, p->gear_rx, p->gear_tx, p->lane_rx, p->lane_tx, p->pwr_rx,
+		  p->pwr_tx, p->hs_rate, ufs->avail_ln_rx, ufs->avail_ln_rx);
+
+		exynos_ufs_show_uic_info(hba);
+
+	return 0;
+}
+
 static struct ufs_hba_ops ufs_hba_exynos_ops = {
 	.init				= exynos_ufs_init,
 	.hce_enable_notify		= exynos_ufs_hce_enable_notify,
@@ -1763,14 +1910,16 @@ static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
 				  UFSHCD_QUIRK_BROKEN_OCS_FATAL_ERROR |
 				  UFSHCI_QUIRK_SKIP_MANUAL_WB_FLUSH_CTRL |
 				  UFSHCD_QUIRK_SKIP_DEF_UNIPRO_TIMEOUT_SETTING |
-				  UFSHCD_QUIRK_BROKEN_CRYPTO_ENABLE,
+				  UFSHCD_QUIRK_BROKEN_CRYPTO_ENABLE |
+				  UFSHCD_QUIRK_BROKEN_INTR_AGGR,
 	.opts			= EXYNOS_UFS_OPT_SKIP_CONFIG_PHY_ATTR |
+				  EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL |
 				  EXYNOS_UFS_OPT_UFSPR_SECURE |
 				  EXYNOS_UFS_OPT_TIMER_TICK_SELECT,
 	.iocc_mask		= EXYNOS9820_SHARABLE,
-	.drv_init		= gs101_ufs_drv_init,
-	.pre_link		= gs101_ufs_pre_link,
-	.post_link		= gs101_ufs_post_link,
+	.drv_init		= exynos9820_ufs_drv_init,
+	.pre_link		= exynos9820_ufs_pre_link,
+	.post_link		= exynos9820_ufs_post_link,
 };
 
 static const struct udevice_id exynos_ufs_of_match[] = {

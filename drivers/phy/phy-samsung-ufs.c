@@ -88,6 +88,8 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 	int err = 0;
 	int i;
 
+	log_debug("%s: calibrating phy_state = %d...\n", __func__, ufs_phy->ufs_phy_state);
+
 	if (unlikely(ufs_phy->ufs_phy_state < CFG_PRE_INIT ||
 		     ufs_phy->ufs_phy_state >= CFG_TAG_MAX)) {
 		dev_err(ufs_phy->dev, "invalid phy config index %d\n", ufs_phy->ufs_phy_state);
@@ -97,6 +99,7 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 	cfg = cfgs[ufs_phy->ufs_phy_state];
 	if (!cfg)
 		goto out;
+	log_debug("%s: found config...\n", __func__);
 
 	for_each_phy_cfg(cfg) {
 		for_each_phy_lane(ufs_phy, i) {
@@ -149,6 +152,12 @@ out:
 	}
 
 	return err;
+}
+
+static int samsung_ufs_phy_configure(struct phy *phy, void *param)
+{
+	(void)param;
+	return samsung_ufs_phy_calibrate(phy);
 }
 
 static int samsung_ufs_phy_clks_init(struct samsung_ufs_phy *phy)
@@ -210,7 +219,7 @@ static int samsung_ufs_phy_power_on(struct phy *phy)
 		}
 	}
 
-	if (ss_phy->ufs_phy_state == CFG_PRE_INIT && false) {
+	if (ss_phy->ufs_phy_state == CFG_PRE_INIT) {
 		ret = samsung_ufs_phy_calibrate(phy);
 		if (ret)
 			dev_err(ss_phy->dev, "ufs phy calibration failed\n");
@@ -263,6 +272,7 @@ static const struct phy_ops samsung_ufs_phy_ops = {
 	.exit		= samsung_ufs_phy_exit,
 	.power_on	= samsung_ufs_phy_power_on,
 	.power_off	= samsung_ufs_phy_power_off,
+	.configure	= samsung_ufs_phy_configure,
 	.set_mode	= samsung_ufs_phy_set_mode,
 };
 
