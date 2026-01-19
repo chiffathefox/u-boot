@@ -245,6 +245,7 @@
 		};
 
 		ufs_phy: ufs-phy@13d64000 {
+			compatible = "samsung,exynos9820-ufs-phy";
 			reg = <0x13d64000 0x800>;
 			reg-names = "phy-pma";
 			#phy-cells = <0>;
@@ -276,7 +277,7 @@
 			reg = <0x15860000 0x10000>;
 
 			reboot: syscon-reboot {
-				compatible = "syscon-reboot";
+				compatible = "syscon-reboot1";
 				regmap = <&pmu_system_controller>;
 				offset = <0x3A00>; /* SWRESET */
 				mask = <0x2>;
