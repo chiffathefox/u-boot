@@ -1,0 +1,978 @@
+#include <dm.h>
+#include <dm/device_compat.h>
+#include "ufs-exynos.h"
+#include "ufs-exynos-dbg.h"
+#include <linux/arm-smccc.h>
+
+struct exynos_ufs_attr_log {
+	const u32 offset;
+	u32 res;
+	u32 val;
+};
+enum {
+	TX_LANE_0 = 0,
+	TX_LANE_1 = 1,
+	TX_LANE_2 = 2,
+	TX_LANE_3 = 3,
+	RX_LANE_0 = 4,
+	RX_LANE_1 = 5,
+	RX_LANE_2 = 6,
+	RX_LANE_3 = 7,
+};
+
+static struct exynos_ufs_attr_log ufs_log_attr[] = {
+	/* PA Standard */
+	{UIC_ARG_MIB(0x1520),	0, 0},
+	{UIC_ARG_MIB(0x1540),	0, 0},
+	{UIC_ARG_MIB(0x1543),	0, 0},
+	{UIC_ARG_MIB(0x155C),	0, 0},
+	{UIC_ARG_MIB(0x155D),	0, 0},
+	{UIC_ARG_MIB(0x155E),	0, 0},
+	{UIC_ARG_MIB(0x155F),	0, 0},
+	{UIC_ARG_MIB(0x1560),	0, 0},
+	{UIC_ARG_MIB(0x1561),	0, 0},
+	{UIC_ARG_MIB(0x1564),	0, 0},
+	{UIC_ARG_MIB(0x1567),	0, 0},
+	{UIC_ARG_MIB(0x1568),	0, 0},
+	{UIC_ARG_MIB(0x1569),	0, 0},
+	{UIC_ARG_MIB(0x156A),	0, 0},
+	{UIC_ARG_MIB(0x1571),	0, 0},
+	{UIC_ARG_MIB(0x1580),	0, 0},
+	{UIC_ARG_MIB(0x1581),	0, 0},
+	{UIC_ARG_MIB(0x1582),	0, 0},
+	{UIC_ARG_MIB(0x1583),	0, 0},
+	{UIC_ARG_MIB(0x1584),	0, 0},
+	{UIC_ARG_MIB(0x1585),	0, 0},
+	{UIC_ARG_MIB(0x1586),	0, 0},
+	{UIC_ARG_MIB(0x1587),	0, 0},
+	{UIC_ARG_MIB(0x1590),	0, 0},
+	{UIC_ARG_MIB(0x1591),	0, 0},
+	{UIC_ARG_MIB(0x15A1),	0, 0},
+	{UIC_ARG_MIB(0x15A2),	0, 0},
+	{UIC_ARG_MIB(0x15A3),	0, 0},
+	{UIC_ARG_MIB(0x15A4),	0, 0},
+	{UIC_ARG_MIB(0x15A7),	0, 0},
+	{UIC_ARG_MIB(0x15A8),	0, 0},
+	{UIC_ARG_MIB(0x15A9),	0, 0},
+	{UIC_ARG_MIB(0x15B0),	0, 0},
+	{UIC_ARG_MIB(0x15B1),	0, 0},
+	{UIC_ARG_MIB(0x15B2),	0, 0},
+	{UIC_ARG_MIB(0x15C0),	0, 0},
+	{UIC_ARG_MIB(0x15C1),	0, 0},
+	{UIC_ARG_MIB(0x15D2),	0, 0},
+	{UIC_ARG_MIB(0x15D3),	0, 0},
+	{UIC_ARG_MIB(0x15D4),	0, 0},
+	{UIC_ARG_MIB(0x15D5),	0, 0},
+	/* PA Debug */
+	{UIC_ARG_MIB(0x9500),	0, 0},
+	{UIC_ARG_MIB(0x9501),	0, 0},
+	{UIC_ARG_MIB(0x9502),	0, 0},
+	{UIC_ARG_MIB(0x9504),	0, 0},
+	{UIC_ARG_MIB(0x9529),	0, 0},
+	{UIC_ARG_MIB(0x9564),	0, 0},
+	{UIC_ARG_MIB(0x956A),	0, 0},
+	{UIC_ARG_MIB(0x956D),	0, 0},
+	{UIC_ARG_MIB(0x9570),	0, 0},
+	{UIC_ARG_MIB(0x9595),	0, 0},
+	{UIC_ARG_MIB(0x9596),	0, 0},
+	{UIC_ARG_MIB(0x9597),	0, 0},
+	/* DL Standard */
+	{UIC_ARG_MIB(0x2041),	0, 0},
+	{UIC_ARG_MIB(0x2042),	0, 0},
+	{UIC_ARG_MIB(0x2043),	0, 0},
+	{UIC_ARG_MIB(0x2047),	0, 0},
+	{UIC_ARG_MIB(0x2067),	0, 0},
+	/* DL Debug */
+	{UIC_ARG_MIB(0xA000),	0, 0},
+	{UIC_ARG_MIB(0xA005),	0, 0},
+	{UIC_ARG_MIB(0xA006),	0, 0},
+	{UIC_ARG_MIB(0xA007),	0, 0},
+	{UIC_ARG_MIB(0xA010),	0, 0},
+	{UIC_ARG_MIB(0xA011),	0, 0},
+	{UIC_ARG_MIB(0xA020),	0, 0},
+	{UIC_ARG_MIB(0xA021),	0, 0},
+	{UIC_ARG_MIB(0xA022),	0, 0},
+	{UIC_ARG_MIB(0xA023),	0, 0},
+	{UIC_ARG_MIB(0xA024),	0, 0},
+	{UIC_ARG_MIB(0xA025),	0, 0},
+	{UIC_ARG_MIB(0xA026),	0, 0},
+	{UIC_ARG_MIB(0xA027),	0, 0},
+	{UIC_ARG_MIB(0xA028),	0, 0},
+	{UIC_ARG_MIB(0xA029),	0, 0},
+	{UIC_ARG_MIB(0xA02A),	0, 0},
+	{UIC_ARG_MIB(0xA02B),	0, 0},
+	{UIC_ARG_MIB(0xA100),	0, 0},
+	{UIC_ARG_MIB(0xA101),	0, 0},
+	{UIC_ARG_MIB(0xA102),	0, 0},
+	{UIC_ARG_MIB(0xA103),	0, 0},
+	{UIC_ARG_MIB(0xA114),	0, 0},
+	{UIC_ARG_MIB(0xA115),	0, 0},
+	{UIC_ARG_MIB(0xA116),	0, 0},
+	{UIC_ARG_MIB(0xA120),	0, 0},
+	{UIC_ARG_MIB(0xA121),	0, 0},
+	{UIC_ARG_MIB(0xA122),	0, 0},
+	/* NL Standard */
+	{UIC_ARG_MIB(0x3000),	0, 0},
+	{UIC_ARG_MIB(0x3001),	0, 0},
+	/* NL Debug */
+	{UIC_ARG_MIB(0xB011),	0, 0},
+	/* TL Standard */
+	{UIC_ARG_MIB(0x4020),	0, 0},
+	{UIC_ARG_MIB(0x4021),	0, 0},
+	/* TL Debug */
+	{UIC_ARG_MIB(0xC001),	0, 0},
+	{UIC_ARG_MIB(0xC024),	0, 0},
+	{UIC_ARG_MIB(0xC026),	0, 0},
+	/* MPHY PCS Lane 0*/
+	{UIC_ARG_MIB_SEL(0x0004, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0021, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0022, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0023, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0024, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0028, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0029, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002A, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002B, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002C, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002D, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0033, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0035, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0036, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0041, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A9, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00AA, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00AB, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0011, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0012, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x001B, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0025, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002F, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0076, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0084, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x008F, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A1, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A2, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A3, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A4, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A7, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00C1, RX_LANE_0+0),	0, 0},
+	/* MPHY PCS Lane 1*/
+	{UIC_ARG_MIB_SEL(0x0004, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0021, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0022, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0023, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0024, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0028, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0029, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002A, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002B, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002C, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002D, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0033, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0035, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0036, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0041, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A9, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00AA, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00AB, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0011, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0012, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x001B, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0025, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002F, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0076, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0084, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x008F, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A1, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A2, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A3, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A4, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A7, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00C1, RX_LANE_0+1),	0, 0},
+	{},
+};
+
+
+#define REG_UTP_TRANSFER_REQ_LIST_CNR 0x64
+
+#define REG_CONTROLLER_DEV_ID	0x10
+#define REG_CONTROLLER_PROD_ID	0x14
+
+#define UFS_VER_0004	4
+#define UFS_VER_0005	5
+#define UFS_VER_0006	6
+
+/*
+ * Exynos's Vendor specific registers for UFSHCI
+ */
+#define HCI_TXPRDT_ENTRY_SIZE		0x00
+#define HCI_RXPRDT_ENTRY_SIZE		0x04
+#define HCI_TO_CNT_DIV_VAL              0x08
+#define HCI_1US_TO_CNT_VAL		0x0C
+ #define CNT_VAL_1US_MASK	0x3ff
+#define HCI_INVALID_UPIU_CTRL		0x10
+#define HCI_INVALID_UPIU_BADDR		0x14
+#define HCI_INVALID_UPIU_UBADDR		0x18
+#define HCI_INVALID_UTMR_OFFSET_ADDR	0x1C
+#define HCI_INVALID_UTR_OFFSET_ADDR	0x20
+#define HCI_INVALID_DIN_OFFSET_ADDR	0x24
+#define HCI_VENDOR_SPECIFIC_IS		0x38
+#define HCI_VENDOR_SPECIFIC_IE		0x3C
+#define HCI_UTRL_NEXUS_TYPE		0x40
+#define HCI_UTMRL_NEXUS_TYPE		0x44
+#define HCI_E2EFC_CTRL			0x48
+#define HCI_SW_RST			0x50
+ #define UFS_LINK_SW_RST	(1 << 0)
+ #define UFS_UNIPRO_SW_RST	(1 << 1)
+ #define UFS_SW_RST_MASK	(UFS_UNIPRO_SW_RST | UFS_LINK_SW_RST)
+#define HCI_LINK_VERSION		0x54
+#define HCI_IDLE_TIMER_CONFIG		0x58
+#define HCI_RX_UPIU_MATCH_ERROR_CODE	0x5C
+#define HCI_DATA_REORDER		0x60
+#define HCI_MAX_DOUT_DATA_SIZE		0x64
+#define HCI_UNIPRO_APB_CLK_CTRL		0x68
+#define HCI_AXIDMA_RWDATA_BURST_LEN	0x6C
+ #define BURST_LEN(x)			((x) << 27 | (x))
+ #define WLU_EN				(1 << 31)
+ #define AXIDMA_RWDATA_BURST_LEN	(0xF)
+#define HCI_GPIO_OUT			0x70
+#define HCI_WRITE_DMA_CTRL		0x74
+#define HCI_ERROR_EN_PA_LAYER		0x78
+#define HCI_ERROR_EN_DL_LAYER		0x7C
+#define HCI_ERROR_EN_N_LAYER		0x80
+#define HCI_ERROR_EN_T_LAYER		0x84
+#define HCI_ERROR_EN_DME_LAYER		0x88
+#define HCI_UFSHCI_V2P1_CTRL			0X8C
+#define IA_TICK_SEL				BIT(16)
+#define HCI_REQ_HOLD_EN			0xAC
+
+#define HCI_CLKSTOP_CTRL		0xB0
+ #define REFCLKOUT_STOP			BIT(4)
+ #define MPHY_APBCLK_STOP		BIT(3)
+ #define REFCLK_STOP			BIT(2)
+ #define UNIPRO_MCLK_STOP		BIT(1)
+ #define UNIPRO_PCLK_STOP		BIT(0)
+ #define CLK_STOP_ALL		(REFCLKOUT_STOP |\
+					REFCLK_STOP |\
+					UNIPRO_MCLK_STOP |\
+					UNIPRO_PCLK_STOP)
+
+#define HCI_FORCE_HCS			0xB4
+ #define REFCLKOUT_STOP_EN	BIT(11)
+ #define MPHY_APBCLK_STOP_EN	BIT(10)
+ #define UFSP_DRCG_EN		BIT(8)   //FMP
+ #define REFCLK_STOP_EN		BIT(7)
+ #define UNIPRO_PCLK_STOP_EN	BIT(6)
+ #define UNIPRO_MCLK_STOP_EN	BIT(5)
+ #define HCI_CORECLK_STOP_EN	BIT(4)
+ #define CLK_STOP_CTRL_EN_ALL	(UFSP_DRCG_EN |\
+					MPHY_APBCLK_STOP_EN |\
+					REFCLKOUT_STOP_EN |\
+					REFCLK_STOP_EN |\
+					UNIPRO_PCLK_STOP_EN |\
+					UNIPRO_MCLK_STOP_EN)
+
+#define HCI_FSM_MONITOR			0xC0
+#define HCI_PRDT_HIT_RATIO		0xC4
+#define HCI_DMA0_MONITOR_STATE		0xC8
+#define HCI_DMA0_MONITOR_CNT		0xCC
+#define HCI_DMA1_MONITOR_STATE		0xD0
+#define HCI_DMA1_MONITOR_CNT		0xD4
+#define HCI_DMA0_DOORBELL_DEBUG		0xD8
+#define HCI_DMA1_DOORBELL_DEBUG		0xDC
+
+#define HCI_UFS_AXI_DMA_IF_CTRL		0xF8
+#define HCI_UFS_ACG_DISABLE		0xFC
+ #define HCI_UFS_ACG_DISABLE_EN		BIT(0)
+#define HCI_IOP_ACG_DISABLE		0x100
+ #define HCI_IOP_ACG_DISABLE_EN		BIT(0)
+#define HCI_MPHY_REFCLK_SEL		0x108
+ #define MPHY_REFCLK_SEL		BIT(0)
+#define HCI_SMU_RD_ABORT_MATCH_INFO		0x118
+#define HCI_SMU_WR_ABORT_MATCH_INFO		0x11C
+#define HCI_DBR_DUPLICATION_INFO		0x120
+#define HCI_INVALID_PRDT_CTRL		0x130
+
+#define HCI_DBR_TIMER_CONFIG		0x140
+#define HCI_UTRL_DBR_TIMER_ENABLE		0x144
+#define HCI_UTRL_DBR_TIMER_STATUS		0x148
+#define HCI_UTMRL_DBR_TIMER_ENABLE		0x14C
+#define HCI_UTMRL_DBR_TIMER_STATUS		0x150
+
+#define HCI_UTRL_DBR_3_0_TIMER_EXPIRED_VALUE		0x160
+#define HCI_UTRL_DBR_7_4_TIMER_EXPIRED_VALUE		0x164
+#define HCI_UTRL_DBR_11_8_TIMER_EXPIRED_VALUE		0x168
+#define HCI_UTRL_DBR_15_12_TIMER_EXPIRED_VALUE		0x16C
+#define HCI_UTRL_DBR_19_16_TIMER_EXPIRED_VALUE		0x170
+#define HCI_UTRL_DBR_23_20_TIMER_EXPIRED_VALUE		0x174
+#define HCI_UTRL_DBR_27_24_TIMER_EXPIRED_VALUE		0x178
+#define HCI_UTRL_DBR_31_28_TIMER_EXPIRED_VALUE		0x17C
+
+#define HCI_UTMRL_DBR_3_0_TIMER_EXPIRED_VALUE		0x180
+
+/* Device fatal error */
+#define DFES_ERR_EN	BIT(31)
+#define DFES_DEF_DL_ERRS	(UIC_DATA_LINK_LAYER_ERROR_RX_BUF_OF |\
+				 UIC_DATA_LINK_LAYER_ERROR_PA_INIT)
+#define DFES_DEF_N_ERRS		(UIC_NETWORK_UNSUPPORTED_HEADER_TYPE |\
+				 UIC_NETWORK_BAD_DEVICEID_ENC |\
+				 UIC_NETWORK_LHDR_TRAP_PACKET_DROPPING)
+#define DFES_DEF_T_ERRS		(UIC_TRANSPORT_UNSUPPORTED_HEADER_TYPE |\
+				 UIC_TRANSPORT_UNKNOWN_CPORTID |\
+				 UIC_TRANSPORT_NO_CONNECTION_RX |\
+				 UIC_TRANSPORT_BAD_TC)
+
+/* TXPRDT defines */
+#define PRDT_PREFECT_EN		BIT(31)
+#define PRDT_SET_SIZE(x)	((x) & 0x1F)
+
+enum {
+	UNIP_PA_LYR = 0,
+	UNIP_DL_LYR,
+	UNIP_N_LYR,
+	UNIP_T_LYR,
+	UNIP_DME_LYR,
+};
+
+/*
+ * UNIPRO registers
+ */
+#define UNIP_COMP_VERSION			0x000
+#define UNIP_COMP_INFO				0x004
+#define UNIP_COMP_RESET				0x010
+
+#define UNIP_DME_POWERON_REQ			0x7800
+#define UNIP_DME_POWERON_CNF_RESULT		0x7804
+#define UNIP_DME_POWEROFF_REQ			0x7810
+#define UNIP_DME_POWEROFF_CNF_RESULT		0x7814
+#define UNIP_DME_RESET_REQ 			0x7820
+#define UNIP_DME_RESET_REQ_LEVEL		0x7824
+#define UNIP_DME_ENABLE_REQ			0x7830
+#define UNIP_DME_ENABLE_CNF_RESULT 		0x7834
+#define UNIP_DME_ENDPOINTRESET_REQ 		0x7840
+#define UNIP_DME_ENDPOINTRESET_CNF_RESULT	0x7844
+#define UNIP_DME_LINKSTARTUP_REQ		0x7850
+#define UNIP_DME_LINKSTARTUP_CNF_RESULT		0x7854
+#define UNIP_DME_HIBERN8_ENTER_REQ 		0x7860
+#define UNIP_DME_HIBERN8_ENTER_CNF_RESULT	0x7864
+#define UNIP_DME_HIBERN8_ENTER_IND_RESULT	0x7868
+#define UNIP_DME_HIBERN8_EXIT_REQ		0x7870
+#define UNIP_DME_HIBERN8_EXIT_CNF_RESULT	0x7874
+#define UNIP_DME_HIBERN8_EXIT_IND_RESULT	0x7878
+#define UNIP_DME_PWR_REQ			0x7880
+#define UNIP_DME_PWR_REQ_POWERMODE 		0x7884
+#define UNIP_DME_PWR_REQ_LOCALL2TIMER0 		0x7888
+#define UNIP_DME_PWR_REQ_LOCALL2TIMER1 		0x788C
+#define UNIP_DME_PWR_REQ_LOCALL2TIMER2 		0x7890
+#define UNIP_DME_PWR_REQ_REMOTEL2TIMER0		0x78B8
+#define UNIP_DME_PWR_REQ_REMOTEL2TIMER1		0x78BC
+#define UNIP_DME_PWR_REQ_REMOTEL2TIMER2		0x78C0
+#define UNIP_DME_PWR_CNF_RESULT			0x78E8
+#define UNIP_DME_PWR_IND_RESULT			0x78EC
+#define UNIP_DME_TEST_MODE_REQ 			0x7900
+#define UNIP_DME_TEST_MODE_CNF_RESULT		0x7904
+
+#define UNIP_DME_ERROR_IND_LAYER		0x0C0
+#define UNIP_DME_ERROR_IND_ERRCODE		0x0C4
+#define UNIP_DME_PACP_CNFBIT			0x0C8
+#define UNIP_DME_DL_FRAME_IND			0x0D0
+#define UNIP_DME_INTR_STATUS			0x0E0
+#define UNIP_DME_INTR_ENABLE			0x0E4
+
+#define UNIP_DME_GETSET_CONTROL                0x7A00
+#define UNIP_DME_GETSET_ADDR                   0x7A04
+#define UNIP_DME_GETSET_WDATA                  0x7A08
+#define UNIP_DME_GETSET_RDATA                  0x7A0C
+#define UNIP_DME_GETSET_RESULT                 0x7A10
+#define UNIP_DME_PEER_GETSET_CONTROL           0x7A20
+#define UNIP_DME_PEER_GETSET_ADDR              0x7A24
+#define UNIP_DME_PEER_GETSET_WDATA             0x7A28
+#define UNIP_DME_PEER_GETSET_RDATA             0x7A2C
+#define UNIP_DME_PEER_GETSET_RESULT            0x7A30
+
+#define UNIP_DME_INTR_STATUS_LSB			   0x7B00
+#define UNIP_DME_INTR_STATUS_MSB	           0x7B04
+#define UNIP_DME_INTR_ERROR_CODE			   0x7B20
+#define UNIP_DME_DISCARD_PORT_ID	           0x7B24
+#define UNIP_DME_DBG_OPTION_SUITE			   0x7C00
+#define UNIP_DME_DBG_CTRL_FSM		           0x7D00
+#define UNIP_DME_DBG_FLAG_STATUS			   0x7D14
+#define UNIP_DME_DBG_LINKCFG_FSM	           0x7D18
+
+#define UNIP_DME_INTR_ERROR_CODE		0x7B20
+#define UNIP_DME_DEEPSTALL_ENTER_REQ		0x7910
+#define UNIP_DME_DISCARD_CPORT_ID		0x7B24
+
+#define UNIP_DBG_FORCE_DME_CTRL_STATE		0x150
+#define UNIP_DBG_AUTO_DME_LINKSTARTUP		0x158
+#define UNIP_DBG_PA_CTRLSTATE			0x15C
+#define UNIP_DBG_PA_TX_STATE			0x160
+#define UNIP_DBG_BREAK_DME_CTRL_STATE		0x164
+#define UNIP_DBG_STEP_DME_CTRL_STATE		0x168
+#define UNIP_DBG_NEXT_DME_CTRL_STATE		0x16C
+
+/*
+ * UFS Protector registers
+ */
+#define UFSPRCTRL	0x000
+#define UFSPRSTAT	0x008
+#define UFSPRSECURITY	0x010
+ #define NSSMU		BIT(14)
+#define DESCTYPE(type)		((type & 0x3) << 19)
+#define ARPROTPRDT(type)	((type & 0x3) << 16)
+#define ARPROTDESC(type)	((type & 0x3) << 9)
+#define ARPROTDATA(type)	((type & 0x3) << 6)
+#define AWPROTDESC(type)	((type & 0x3) << 3)
+#define AWPROTDATA(type)	((type & 0x3))
+#define CFG_AXPROT(type)	(ARPROTPRDT(type) | ARPROTDESC(type) | \
+				ARPROTDATA(type) | AWPROTDESC(type) | \
+				AWPROTDATA(type))
+#define UFSPVERSION	0x01C
+#define UFSPRENCKEY0	0x020
+#define UFSPRENCKEY1	0x024
+#define UFSPRENCKEY2	0x028
+#define UFSPRENCKEY3	0x02C
+#define UFSPRENCKEY4	0x030
+#define UFSPRENCKEY5	0x034
+#define UFSPRENCKEY6	0x038
+#define UFSPRENCKEY7	0x03C
+#define UFSPRTWKEY0	0x040
+#define UFSPRTWKEY1	0x044
+#define UFSPRTWKEY2	0x048
+#define UFSPRTWKEY3	0x04C
+#define UFSPRTWKEY4	0x050
+#define UFSPRTWKEY5	0x054
+#define UFSPRTWKEY6	0x058
+#define UFSPRTWKEY7	0x05C
+#define UFSPWCTRL	0x100
+#define UFSPWSTAT	0x108
+#define UFSPWSECURITY	0x110
+#define UFSPWENCKEY0	0x120
+#define UFSPWENCKEY1	0x124
+#define UFSPWENCKEY2	0x128
+#define UFSPWENCKEY3	0x12C
+#define UFSPWENCKEY4	0x130
+#define UFSPWENCKEY5	0x134
+#define UFSPWENCKEY6	0x138
+#define UFSPWENCKEY7	0x13C
+#define UFSPWTWKEY0	0x140
+#define UFSPWTWKEY1	0x144
+#define UFSPWTWKEY2	0x148
+#define UFSPWTWKEY3	0x14C
+#define UFSPWTWKEY4	0x150
+#define UFSPWTWKEY5	0x154
+#define UFSPWTWKEY6	0x158
+#define UFSPWTWKEY7	0x15C
+#define UFSPSBEGIN0	0x200
+#define UFSPSEND0	0x204
+#define UFSPSLUN0	0x208
+#define UFSPSCTRL0	0x20C
+#define UFSPSBEGIN1	0x210
+#define UFSPSEND1	0x214
+#define UFSPSLUN1	0x218
+#define UFSPSCTRL1	0x21C
+#define UFSPSBEGIN2	0x220
+#define UFSPSEND2	0x224
+#define UFSPSLUN2	0x228
+#define UFSPSCTRL2	0x22C
+#define UFSPSBEGIN3	0x230
+#define UFSPSEND3	0x234
+#define UFSPSLUN3	0x238
+#define UFSPSCTRL3	0x23C
+#define UFSPSBEGIN4	0x240
+#define UFSPSEND4	0x244
+#define UFSPSLUN4	0x248
+#define UFSPSCTRL4	0x24C
+#define UFSPSBEGIN5	0x250
+#define UFSPSEND5	0x254
+#define UFSPSLUN5	0x258
+#define UFSPSCTRL5	0x25C
+#define UFSPSBEGIN6	0x260
+#define UFSPSEND6	0x264
+#define UFSPSLUN6	0x268
+#define UFSPSCTRL6	0x26C
+#define UFSPSBEGIN7	0x270
+#define UFSPSEND7	0x274
+#define UFSPSLUN7	0x278
+#define UFSPSCTRL7	0x27C
+
+/*
+ * MIBs for PA debug registers
+ */
+#define PA_DBG_CLK_PERIOD		0x9514
+#define PA_DBG_RXPHY_CFGUPDT		0x9519
+#define PA_DBG_MODE			0x9529
+#define PA_DBG_AUTOMODE_THLD		0x9536
+#define PA_DBG_OV_TM			0x200
+#define PA_DBG_RESUME_HIBERN8		0x9550
+#define PA_DBG_OPTION_SUITE		0x9564
+
+/*
+ * MIBs for Transport Layer debug registers
+ */
+#define T_DBG_SKIP_INIT_HIBERN8_EXIT	0xc001
+
+/*
+ * Exynos MPHY attributes
+ */
+#define TX_LINERESET_N_VAL		0x0277
+ #define TX_LINERESET_N(v)	(((v) >> 10) & 0xff)
+#define TX_LINERESET_P_VAL		0x027D
+ #define TX_LINERESET_P(v)	(((v) >> 12) & 0xff)
+#define TX_OV_SLEEP_CNT_TIMER		0x028E
+ #define TX_OV_H8_ENTER_EN		(1 << 7)
+ #define TX_OV_SLEEP_CNT(v)	(((v) >> 5) & 0x7f)
+
+#define TX_HIGH_Z_CNT_11_08		0x028c
+ #define TX_HIGH_Z_CNT_H(v)	(((v) >> 8) & 0xf)
+#define TX_HIGH_Z_CNT_07_00		0x028d
+ #define TX_HIGH_Z_CNT_L(v)	((v) & 0xff)
+#define TX_BASE_NVAL_07_00		0x0293
+ #define TX_BASE_NVAL_L(v)	((v) & 0xff)
+#define TX_BASE_NVAL_15_08		0x0294
+ #define TX_BASE_NVAL_H(v)	(((v) >> 8) & 0xff)
+#define TX_GRAN_NVAL_07_00		0x0295
+ #define TX_GRAN_NVAL_L(v)	((v) & 0xff)
+#define TX_GRAN_NVAL_10_08		0x0296
+ #define TX_GRAN_NVAL_H(v)	(((v) >> 8) & 0x3)
+
+#define RX_FILLER_ENABLE		0x0316
+ #define RX_FILLER_EN		(1 << 1)
+#define RX_LCC_IGNORE			0x0318
+#define RX_LINERESET_VAL		0x0317
+ #define RX_LINERESET(v)	(((v) >> 12) & 0xff)
+#define RX_SYNC_MASK_LENGTH		0x0321
+#define RX_HIBERN8_WAIT_VAL_BIT_20_16	0x0331
+#define RX_HIBERN8_WAIT_VAL_BIT_15_08	0x0332
+#define RX_HIBERN8_WAIT_VAL_BIT_07_00	0x0333
+
+#define RX_OV_SLEEP_CNT_TIMER		0x0340
+ #define RX_OV_SLEEP_CNT(v)	(((v) >> 6) & 0x1f)
+#define RX_OV_STALL_CNT_TIMER		0x0341
+ #define RX_OV_STALL_CNT(v)	(((v) >> 4) & 0xff)
+#define RX_BASE_NVAL_07_00		0x0355
+ #define RX_BASE_NVAL_L(v)	((v) & 0xff)
+#define RX_BASE_NVAL_15_08		0x0354
+ #define RX_BASE_NVAL_H(v)	(((v) >> 8) & 0xff)
+#define RX_GRAN_NVAL_07_00		0x0353
+ #define RX_GRAN_NVAL_L(v)	((v) & 0xff)
+#define RX_GRAN_NVAL_10_08		0x0352
+ #define RX_GRAN_NVAL_H(v)	(((v) >> 8) & 0x3)
+
+#define CMN_PWM_CMN_CTRL		0x0402
+ #define PWM_CMN_CTRL_MASK	0x3
+#define CMN_REFCLK_PLL_LOCK		0x0406
+#define CMN_REFCLK_STREN		0x044C
+#define CMN_REFCLK_OUT			0x044E
+#define CMN_REFCLK_SEL_PLL		0x044F
+
+#define PHY_PMA_COMN_ADDR(reg)		(reg)
+#define PHY_PMA_TRSV_ADDR(reg, lane)	((reg) + (0x140 * (lane)))
+
+#define EXYNOS_PMU_UFS_PHY_OFFSET	0x0724
+
+static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
+	{"STD HCI SFR"			,	LOG_STD_HCI_SFR,		0},
+
+	{"Auto-Hibernate Idle Timer"	,	REG_AUTO_HIBERNATE_IDLE_TIMER,	0},
+	{"INTERRUPT STATUS"		,	REG_INTERRUPT_STATUS,		0},
+	{"INTERRUPT ENABLE"		,	REG_INTERRUPT_ENABLE,		0},
+	{"CONTROLLER STATUS"		,	REG_CONTROLLER_STATUS,		0},
+	{"CONTROLLER ENABLE"		,	REG_CONTROLLER_ENABLE,		0},
+	{"UECPA"			,	REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER,	0},
+	{"UECDL"			,	REG_UIC_ERROR_CODE_DATA_LINK_LAYER,	0},
+	{"UECN"				,	REG_UIC_ERROR_CODE_NETWORK_LAYER,	0},
+	{"UECT"				,	REG_UIC_ERROR_CODE_TRANSPORT_LAYER,	0},
+	{"UECDME"			,	REG_UIC_ERROR_CODE_DME,			0},
+	{"UTP TRANSF REQ INT AGG CNTRL"	,	REG_UTP_TRANSFER_REQ_INT_AGG_CONTROL,		0},
+	{"UTP TRANSF REQ LIST BASE L"	,	REG_UTP_TRANSFER_REQ_LIST_BASE_L,		0},
+	{"UTP TRANSF REQ LIST BASE H"	,	REG_UTP_TRANSFER_REQ_LIST_BASE_H,		0},
+	{"UTP TRANSF REQ DOOR BELL"	,	REG_UTP_TRANSFER_REQ_DOOR_BELL,		0},
+	{"UTP TRANSF REQ LIST CLEAR"	,	REG_UTP_TRANSFER_REQ_LIST_CLEAR,		0},
+	{"UTP TRANSF REQ LIST RUN STOP"	,	REG_UTP_TRANSFER_REQ_LIST_RUN_STOP,		0},
+	{"UTP TRANSF REQ LIST CNR"	,	REG_UTP_TRANSFER_REQ_LIST_CNR,		0},
+	{"UTP TASK REQ LIST BASE L"	,	REG_UTP_TASK_REQ_LIST_BASE_L,		0},
+	{"UTP TASK REQ LIST BASE H"	,	REG_UTP_TASK_REQ_LIST_BASE_H,		0},
+	{"UTP TASK REQ DOOR BELL"	,	REG_UTP_TASK_REQ_DOOR_BELL,		0},
+	{"UTP TASK REQ LIST CLEAR"	,	REG_UTP_TASK_REQ_LIST_CLEAR,		0},
+	{"UTP TASK REQ LIST RUN STOP"	,	REG_UTP_TASK_REQ_LIST_RUN_STOP,		0},
+	{"UIC COMMAND"			,	REG_UIC_COMMAND,		0},
+	{"UIC COMMAND ARG1"		,	REG_UIC_COMMAND_ARG_1,		0},
+	{"UIC COMMAND ARG2"		,	REG_UIC_COMMAND_ARG_2,		0},
+	{"UIC COMMAND ARG3"		,	REG_UIC_COMMAND_ARG_3,		0},
+
+
+	{"VS HCI SFR"			,	LOG_VS_HCI_SFR,			0},
+
+	{"TXPRDT ENTRY SIZE"		,	HCI_TXPRDT_ENTRY_SIZE,		0},
+	{"RXPRDT ENTRY SIZE"		,	HCI_RXPRDT_ENTRY_SIZE,		0},
+	{"TO CNT DIV VAL"		,	HCI_TO_CNT_DIV_VAL,		0},
+	{"1US TO CNT VAL"		,	HCI_1US_TO_CNT_VAL,		0},
+	{"INVALID UPIU CTRL"		,	HCI_INVALID_UPIU_CTRL,		0},
+	{"INVALID UPIU BADDR"		,	HCI_INVALID_UPIU_BADDR,		0},
+	{"INVALID UPIU UBADDR"		,	HCI_INVALID_UPIU_UBADDR,		0},
+	{"INVALID UTMR OFFSET ADDR"	,	HCI_INVALID_UTMR_OFFSET_ADDR,		0},
+	{"INVALID UTR OFFSET ADDR"	,	HCI_INVALID_UTR_OFFSET_ADDR,		0},
+	{"INVALID DIN OFFSET ADDR"	,	HCI_INVALID_DIN_OFFSET_ADDR,		0},
+	{"VENDOR SPECIFIC IS"		,	HCI_VENDOR_SPECIFIC_IS,		0},
+	{"VENDOR SPECIFIC IE"		,	HCI_VENDOR_SPECIFIC_IE,		0},
+	{"UTRL NEXUS TYPE"		,	HCI_UTRL_NEXUS_TYPE,		0},
+	{"UTMRL NEXUS TYPE"		,	HCI_UTMRL_NEXUS_TYPE,		0},
+	{"SW RST"			,	HCI_SW_RST,		0},
+	{"RX UPIU MATCH ERROR CODE"	,	HCI_RX_UPIU_MATCH_ERROR_CODE,		0},
+	{"DATA REORDER"			,	HCI_DATA_REORDER,		0},
+	{"AXIDMA RWDATA BURST LEN"	,	HCI_AXIDMA_RWDATA_BURST_LEN,		0},
+	{"GPIO OUT"			,	HCI_GPIO_OUT,			0},
+	{"WRITE DMA CTRL"		,	HCI_WRITE_DMA_CTRL,		0},
+	{"ERROR EN PA LAYER"		,	HCI_ERROR_EN_PA_LAYER,		0},
+	{"ERROR EN DL LAYER"		,	HCI_ERROR_EN_DL_LAYER,		0},
+	{"ERROR EN N LAYER"		,	HCI_ERROR_EN_N_LAYER,		0},
+	{"ERROR EN T LAYER"		,	HCI_ERROR_EN_T_LAYER,		0},
+	{"ERROR EN DME LAYER"		,	HCI_ERROR_EN_DME_LAYER,		0},
+	{"V2P1 CTRL"			,	HCI_UFSHCI_V2P1_CTRL,	 	0},
+	{"REQ HOLD EN"			,	HCI_REQ_HOLD_EN,		0},
+	{"CLKSTOP CTRL"			,	HCI_CLKSTOP_CTRL,		0},
+	{"FORCE HCS"			,	HCI_FORCE_HCS,		0},
+	{"FSM MONITOR"			,	HCI_FSM_MONITOR,		0},
+	{"DMA0 MONITOR STATE"		,	HCI_DMA0_MONITOR_STATE,		0},
+	{"DMA0 MONITOR CNT"		,	HCI_DMA0_MONITOR_CNT,		0},
+	{"DMA1 MONITOR STATE"		,	HCI_DMA1_MONITOR_STATE,		0},
+	{"DMA1 MONITOR CNT"		,	HCI_DMA1_MONITOR_CNT,		0},
+	{"DMA0 DOORBELL DEBUG"		,	HCI_DMA0_DOORBELL_DEBUG,		0},
+	{"DMA1 DOORBELL DEBUG"		,	HCI_DMA1_DOORBELL_DEBUG,		0},
+
+	{"AXI DMA IF CTRL"		,	HCI_UFS_AXI_DMA_IF_CTRL,	0},
+	{"UFS ACG DISABLE"	 	,	HCI_UFS_ACG_DISABLE,		0},
+	{"IOP ACG DISABLE"		,	HCI_IOP_ACG_DISABLE,		0},
+	{"MPHY REFCLK SEL"		,	HCI_MPHY_REFCLK_SEL,		0},
+
+	{"SMU RD ABORT MATCH INFO"		,	HCI_SMU_RD_ABORT_MATCH_INFO,	0},
+	{"SMU WR ABORT MATCH INFO"		,	HCI_SMU_WR_ABORT_MATCH_INFO,	0},
+
+	{"DBR DUPLICATION INFO"		,	HCI_DBR_DUPLICATION_INFO,	0},
+	{"INVALID PRDT CTRL"		,	HCI_INVALID_PRDT_CTRL,		0},
+	{"DBR TIMER CONFIG"		,	HCI_DBR_TIMER_CONFIG,		0},
+	{"UTRL DBR TIMER ENABLE"		,	HCI_UTRL_DBR_TIMER_ENABLE,		0},
+	{"UTRL DBR TIMER STATUS"		,	HCI_UTRL_DBR_TIMER_STATUS,		0},
+
+	{"UTMRL DBR TIMER ENABLE"		,	HCI_UTMRL_DBR_TIMER_ENABLE,		0},
+	{"UTMRL DBR TIMER STATUS"		,	HCI_UTMRL_DBR_TIMER_STATUS,		0},
+
+	{"UTRL DBR 3 0 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_3_0_TIMER_EXPIRED_VALUE,		0},
+	{"UTRL DBR 7 4 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_7_4_TIMER_EXPIRED_VALUE,	0},
+	{"UTRL DBR 11 8 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_11_8_TIMER_EXPIRED_VALUE,	0},
+	{"UTRL DBR 15 12 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_15_12_TIMER_EXPIRED_VALUE,		0},
+	{"UTRL DBR 19 16 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_19_16_TIMER_EXPIRED_VALUE,		0},
+	{"UTRL DBR 23 20 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_23_20_TIMER_EXPIRED_VALUE,	0},
+	{"UTRL DBR 27 24 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_27_24_TIMER_EXPIRED_VALUE,	0},
+	{"UTRL DBR 31 28 TIMER EXPIRED VALUE"		,	HCI_UTRL_DBR_31_28_TIMER_EXPIRED_VALUE,		0},
+	{"UTMRL DBR 3 0 TIMER EXPIRED VALUE"		,	HCI_UTMRL_DBR_3_0_TIMER_EXPIRED_VALUE,		0},
+
+	{"FMP SFR"			,	LOG_FMP_SFR,			0},
+
+	{"UFSPRCTRL"			,	UFSPRCTRL,			0},
+	{"UFSPRSTAT"			,	UFSPRSTAT,			0},
+	{"UFSPRSECURITY"		,	UFSPRSECURITY,			0},
+	{"UFSPWCTRL"			,	UFSPWCTRL,			0},
+	{"UFSPWSTAT"			,	UFSPWSTAT,			0},
+	{"UFSPSBEGIN0"			,	UFSPSBEGIN0,			0},
+	{"UFSPSEND0"			,	UFSPSEND0,			0},
+	{"UFSPSLUN0"			,	UFSPSLUN0,			0},
+	{"UFSPSCTRL0"			,	UFSPSCTRL0,			0},
+	{"UFSPSBEGIN1"			,	UFSPSBEGIN1,			0},
+	{"UFSPSEND1"			,	UFSPSEND1,			0},
+	{"UFSPSLUN1"			,	UFSPSLUN1,			0},
+	{"UFSPSCTRL1"			,	UFSPSCTRL1,			0},
+	{"UFSPSBEGIN2"			,	UFSPSBEGIN2,			0},
+	{"UFSPSEND2"			,	UFSPSEND2,			0},
+	{"UFSPSLUN2"			,	UFSPSLUN2,			0},
+	{"UFSPSCTRL2"			,	UFSPSCTRL2,			0},
+	{"UFSPSBEGIN3"			,	UFSPSBEGIN3,			0},
+	{"UFSPSEND3"			,	UFSPSEND3,			0},
+	{"UFSPSLUN3"			,	UFSPSLUN3,			0},
+	{"UFSPSCTRL3"			,	UFSPSCTRL3,			0},
+	{"UFSPSBEGIN4"			,	UFSPSBEGIN4,			0},
+	{"UFSPSLUN4"			,	UFSPSLUN4,			0},
+	{"UFSPSCTRL4"			,	UFSPSCTRL4,			0},
+	{"UFSPSBEGIN5"			,	UFSPSBEGIN5,			0},
+	{"UFSPSEND5"			,	UFSPSEND5,			0},
+	{"UFSPSLUN5"			,	UFSPSLUN5,			0},
+	{"UFSPSCTRL5"			,	UFSPSCTRL5,			0},
+	{"UFSPSBEGIN6"			,	UFSPSBEGIN6,			0},
+	{"UFSPSEND6"			,	UFSPSEND6,			0},
+	{"UFSPSLUN6"			,	UFSPSLUN6,			0},
+	{"UFSPSCTRL6"			,	UFSPSCTRL6,			0},
+	{"UFSPSBEGIN7"			,	UFSPSBEGIN7,			0},
+	{"UFSPSEND7"			,	UFSPSEND7,			0},
+	{"UFSPSLUN7"			,	UFSPSLUN7,			0},
+	{"UFSPSCTRL7"			,	UFSPSCTRL7,			0},
+
+	{"UNIPRO SFR"			,	LOG_UNIPRO_SFR,			0},
+
+	{"COMP VERSION"			,	UNIP_COMP_VERSION,		0},
+	{"COMP INFO"			,	UNIP_COMP_INFO,			0},
+	{"DME ERROR IND LAYER"		,	UNIP_DME_ERROR_IND_LAYER,	0},
+	{"DME ERROR IND ERRCODE"	,	UNIP_DME_ERROR_IND_ERRCODE,	0},
+	{"DME INTR STATUS"		,	UNIP_DME_INTR_STATUS,		0},
+	{"DME INTR ENABLE"		,	UNIP_DME_INTR_ENABLE,		0},
+	{"DBG PA CTRLSTATE"		,	UNIP_DBG_PA_CTRLSTATE,		0},
+	{"DBG PA TX STATE"		,	UNIP_DBG_PA_TX_STATE,		0},
+	{"DBG NEXT DME CTRL STATE"	,	UNIP_DBG_NEXT_DME_CTRL_STATE,	0},
+	{"DME PWR REQ"			,	UNIP_DME_PWR_REQ,		0},
+	{"DME PWR REQ POWERMODE"	,	UNIP_DME_PWR_REQ_POWERMODE,	0},
+	{"DME PWR REQ LOCAL L2T0"	,	UNIP_DME_PWR_REQ_LOCALL2TIMER0,	0},
+	{"DME PWR REQ LOCAL L2T1"	,	UNIP_DME_PWR_REQ_LOCALL2TIMER1,	0},
+	{"DME PWR REQ LOCAL L2T2"	,	UNIP_DME_PWR_REQ_LOCALL2TIMER2,	0},
+	{"DME PWR REQ REMOTE L2T0"	,	UNIP_DME_PWR_REQ_REMOTEL2TIMER0,	0},
+	{"DME PWR REQ REMOTE L2T1"	,	UNIP_DME_PWR_REQ_REMOTEL2TIMER1,	0},
+	{"DME PWR REQ REMOTE L2T2"	,	UNIP_DME_PWR_REQ_REMOTEL2TIMER2,	0},
+	{"DME PWR CNF RESULT"		,	UNIP_DME_PWR_CNF_RESULT,	0},
+	{"DME GETSET RESULT"		,	UNIP_DME_GETSET_RESULT,		0},
+	{"DME_LINKSTARTUP_CNF_RESULT"	,	UNIP_DME_LINKSTARTUP_CNF_RESULT	,	0},
+	{"DME_HIBERN8_ENTER_CNF_RESULT"	,	UNIP_DME_HIBERN8_ENTER_CNF_RESULT,	0},
+	{"DME_HIBERN8_ENTER_IND_RESULT"	,	UNIP_DME_HIBERN8_ENTER_IND_RESULT,	0},
+	{"DME_HIBERN8_EXIT_CNF_RESULT"	,	UNIP_DME_HIBERN8_EXIT_CNF_RESULT,	0},
+	{"DME_HIBERN8_EXIT_IND_RESULT"	,	UNIP_DME_HIBERN8_EXIT_IND_RESULT,	0},
+	{"DME_PWR_IND_RESULT"		,	UNIP_DME_PWR_IND_RESULT	,	0},
+	{"DME_INTR_STATUS_LSB"		,	UNIP_DME_INTR_STATUS_LSB,	0},
+	{"DME_INTR_STATUS_MSB"		,	UNIP_DME_INTR_STATUS_MSB,	0},
+	{"DME_INTR_ERROR_CODE"		,	UNIP_DME_INTR_ERROR_CODE,	0},
+	{"DME_DISCARD_PORT_ID"		,	UNIP_DME_DISCARD_PORT_ID,	0},
+	{"DME_DBG_OPTION_SUITE"		,	UNIP_DME_DBG_OPTION_SUITE,	0},
+	{"DME_DBG_CTRL_FSM"		,	UNIP_DME_DBG_CTRL_FSM,	0},
+	{"DME_DBG_FLAG_STATUS"		,	UNIP_DME_DBG_FLAG_STATUS,	0},
+	{"DME_DBG_LINKCFG_FSM"		,	UNIP_DME_DBG_LINKCFG_FSM,	0},
+
+	{"PMA SFR"			,	LOG_PMA_SFR,			0},
+
+	/* PMA COMN init sequence */
+	{"COMN 0x00"			,	(0x0000),			0},
+	{"COMN 0x01"			,	(0x0004),			0},
+	{"COMN 0x06"			,	(0x0018),			0},
+	{"COMN 0x27"			,	(0x009C),			0},
+	{"COMN 0x28"			,	(0x00A0),			0},
+	{"COMN 0x37"			,	(0x00DC),			0},
+	{"COMN 0x3D"			,	(0x00F4),			0},
+	{"COMN 0x3F"			,	(0x00FC),			0},
+	{"COMN 0x43"			,	(0x010C),			0},
+	{"COMN 0x45"			,	(0x0114),			0},
+	{"COMN 0x46"			,	(0x0118),			0},
+	{"COMN 0x47"			,	(0x011C),			0},
+
+	/* PMA TRSV init sequence L0 */
+	{"TRSV_L0 0x10C"		,	(0x0430),			0},
+	{"TRSV_L0 0x101"		,	(0x0404),			0},
+	{"TRSV_L0 0x102"		,	(0x0408),			0},
+	{"TRSV_L0 0x103"		,	(0x040C),			0},
+	{"TRSV_L0 0x104"		,	(0x0410),			0},
+	{"TRSV_L0 0x105"		,	(0x0414),			0},
+	{"TRSV_L0 0x118"		,	(0x0460),			0},
+	{"TRSV_L0 0x13A"		,	(0x04E8),			0},
+	{"TRSV_L0 0x152"		,	(0x0548),			0},
+	{"TRSV_L0 0x153"		,	(0x054C),			0},
+	{"TRSV_L0 0x154"		,	(0x0550),			0},
+	{"TRSV_L0 0x156"		,	(0x0558),			0},
+	{"TRSV_L0 0x15A"		,	(0x0568),			0},
+	{"TRSV_L0 0x159"		,	(0x0564),			0},
+	{"TRSV_L0 0x168"		,	(0x05A0),			0},
+	{"TRSV_L0 0x169"		,	(0x05A4),			0},
+	{"TRSV_L0 0x16C"		,	(0x05B0),			0},
+	{"TRSV_L0 0x18A"		,	(0x0628),			0},
+	{"TRSV_L0 0x19F"		,	(0x067C),			0},
+	{"TRSV_L0 0x1A2"		,	(0x0688),			0},
+	{"TRSV_L0 0x1B6"		,	(0x06D8),			0},
+	{"TRSV_L0 0x1B9"		,	(0x06E4),			0},
+	{"TRSV_L0 0x1C2"		,	(0x0708),			0},
+	{"TRSV_L0 0x1C5"		,	(0x0714),			0},
+	{"TRSV_L0 0x1EC"		,	(0x07B0),			0},
+	{"TRSV_L0 0x1ED"		,	(0x07B4),			0},
+	{"TRSV_L0 0x1EE"		,	(0x07B8),			0},
+	{"TRSV_L0 0x1EF"		,	(0x07BC),			0},
+	{"TRSV_L0 0x1F2"		,	(0x07C8),			0},
+
+	/* PMA TRSV L1 (L0 base + 0x400) */
+	{"TRSV_L1 0x101"		,	(0x0804),			0},
+	{"TRSV_L1 0x102"		,	(0x0808),			0},
+	{"TRSV_L1 0x103"		,	(0x080C),			0},
+	{"TRSV_L1 0x104"		,	(0x0810),			0},
+	{"TRSV_L1 0x105"		,	(0x0814),			0},
+	{"TRSV_L1 0x10C"		,	(0x0830),			0},
+	{"TRSV_L1 0x118"		,	(0x0860),			0},
+	{"TRSV_L1 0x13A"		,	(0x08E8),			0},
+	{"TRSV_L1 0x156"		,	(0x0958),			0},
+	{"TRSV_L1 0x15A"		,	(0x0968),			0},
+	{"TRSV_L1 0x168"		,	(0x09A0),			0},
+	{"TRSV_L1 0x169"		,	(0x09A4),			0},
+	{"TRSV_L1 0x16C"		,	(0x09B0),			0},
+	{"TRSV_L1 0x18A"		,	(0x0A28),			0},
+	{"TRSV_L1 0x19F"		,	(0x0A7C),			0},
+	{"TRSV_L1 0x1A2"		,	(0x0A88),			0},
+	{"TRSV_L1 0x1B6"		,	(0x0AD8),			0},
+	{"TRSV_L1 0x1B9"		,	(0x0AE4),			0},
+	{"TRSV_L1 0x1C2"		,	(0x0B08),			0},
+	{"TRSV_L1 0x1C5"		,	(0x0B14),			0},
+	{"TRSV_L1 0x1EC"		,	(0x0BB0),			0},
+	{"TRSV_L1 0x1ED"		,	(0x0BB4),			0},
+	{"TRSV_L1 0x1EE"		,	(0x0BB8),			0},
+	{"TRSV_L1 0x1EF"		,	(0x0BBC),			0},
+	{"TRSV_L1 0x252"		,	(0x0948),			0},
+	{"TRSV_L1 0x253"		,	(0x094C),			0},
+	{"TRSV_L1 0x254"		,	(0x0950),			0},
+	{"TRSV_L1 0x259"		,	(0x0964),			0},
+	{"TRSV_L1 0x2F2"		,	(0x0BC8),			0},
+	{},
+};
+
+#define SMC_CMD_FMP_SMU_DUMP		(0xC2001870)
+int exynos_smc(unsigned long cmd, unsigned long arg1, unsigned long arg2, unsigned long arg3)
+{
+	struct arm_smccc_res res;
+	arm_smccc_smc(cmd, arg1, arg2, arg3, 0, 0, 0, 0, &res);
+	return res.a0;
+}
+
+static inline u32 phy_pma_readl(struct exynos_ufs *ufs, u32 reg)
+{
+	// u32 reg1 = hci_readl(ufs, HCI_CLKSTOP_CTRL);
+
+	// hci_writel(ufs, reg1 & ~MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
+	reg = readl((void*)0x13d64000 + reg);
+	// hci_writel(ufs, reg1 | MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
+
+	return reg;
+}
+
+static void exynos_ufs_get_sfr(struct ufs_hba *hba,
+					struct exynos_ufs_sfr_log* cfg)
+{
+	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
+	int sel_api = 0;
+
+	while(cfg) {
+		if (!cfg->name)
+			break;
+
+		if (cfg->offset >= LOG_STD_HCI_SFR) {
+			/* Select an API to get SFRs */
+			sel_api = cfg->offset;
+		} else {
+			/* Fetch value */
+			if (sel_api == LOG_STD_HCI_SFR)
+				cfg->val = ufshcd_readl(hba, cfg->offset);
+			else if (sel_api == LOG_VS_HCI_SFR)
+				cfg->val = hci_readl(ufs, cfg->offset);
+			else if (sel_api == LOG_FMP_SFR)
+				cfg->val = exynos_smc(SMC_CMD_FMP_SMU_DUMP, 0, 0, cfg->offset);
+			else if (sel_api == LOG_UNIPRO_SFR)
+				cfg->val = unipro_readl(ufs, cfg->offset);
+			else if (sel_api == LOG_PMA_SFR)
+				cfg->val = phy_pma_readl(ufs, cfg->offset);
+			else
+				cfg->val = 0xDEADBEEF;
+		}
+
+		/* Next SFR */
+		cfg++;
+	}
+}
+
+static void exynos_ufs_get_attr(struct ufs_hba *hba,
+					struct exynos_ufs_attr_log* cfg)
+{
+	u32 i;
+	u32 intr_enable;
+
+	/* Disable and backup interrupts */
+	intr_enable = ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
+	ufshcd_writel(hba, 0, REG_INTERRUPT_ENABLE);
+
+	while(cfg) {
+		if (cfg->offset == 0)
+			break;
+
+		/* Send DME_GET */
+		ufshcd_writel(hba, cfg->offset, REG_UIC_COMMAND_ARG_1);
+		ufshcd_writel(hba, UIC_CMD_DME_GET, REG_UIC_COMMAND);
+
+		i = 0;
+		while(!(ufshcd_readl(hba, REG_INTERRUPT_STATUS) &
+					UIC_COMMAND_COMPL)) {
+			if (i++ > 20000) {
+				dev_err(hba->dev,
+					"Failed to fetch a value of %x",
+					cfg->offset);
+				goto out;
+			}
+		}
+
+		/* Clear UIC command completion */
+		ufshcd_writel(hba, UIC_COMMAND_COMPL, REG_INTERRUPT_STATUS);
+
+		/* Fetch result and value */
+		cfg->res = ufshcd_readl(hba, REG_UIC_COMMAND_ARG_2 &
+				MASK_UIC_COMMAND_RESULT);
+		cfg->val = ufshcd_readl(hba, REG_UIC_COMMAND_ARG_3);
+
+		/* Next attribute */
+		cfg++;
+	}
+
+out:
+	/* Restore and enable interrupts */
+	ufshcd_writel(hba, intr_enable, REG_INTERRUPT_ENABLE);
+}
+
+
+static void exynos_ufs_dump_sfr(struct ufs_hba *hba,
+					struct exynos_ufs_sfr_log* cfg)
+{
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": \t\tREGISTER DUMP\n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+
+	while(cfg) {
+		if (!cfg->name)
+			break;
+
+		/* Dump */
+		dev_dbg(hba->dev, ": %s(0x%04x):\t\t\t\t0x%08x\n",
+				cfg->name, cfg->offset, cfg->val);
+
+		/* Next SFR */
+		cfg++;
+	}
+}
+
+static void exynos_ufs_dump_attr(struct ufs_hba *hba,
+					struct exynos_ufs_attr_log* cfg)
+{
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": \t\tATTRIBUTE DUMP\n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+
+	while(cfg) {
+		if (!cfg->offset)
+			break;
+
+		/* Dump */
+		dev_dbg(hba->dev, ": 0x%04x:\t\t0x%08x\t\t0x%08x\n",
+				cfg->offset, cfg->val, cfg->res);
+
+		/* Next SFR */
+		cfg++;
+	}
+}
+
+void exynos_ufs_show_uic_info(struct ufs_hba *hba)
+{
+	exynos_ufs_get_sfr(hba, ufs_log_sfr);
+	exynos_ufs_get_attr(hba, ufs_log_attr);
+
+	exynos_ufs_dump_sfr(hba, ufs_log_sfr);
+	exynos_ufs_dump_attr(hba, ufs_log_attr);
+}
+
+void exynos_ufs_debug_init(struct exynos_ufs_debug *debug, struct ufs_hba *hba) {
+        debug->std_sfr = ufs_log_sfr;
+        debug->hba = hba;
+}
