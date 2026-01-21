@@ -2,7 +2,7 @@
 /*
  * Samsung Exynos 9820 SoC device tree source
  *
- * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ * Copyright (c) 2025 chiffathefox <chiffathefoxx@gmail.com>
  */
 
 #include <dt-bindings/clock/exynos9820.h>
@@ -210,6 +210,47 @@
 			status = "disabled";
 		};
 
+		sysreg_fsys1: syscon@13c10000 {
+			compatible = "samsung,exynos9820-fsys1-sysreg", "syscon";
+			reg = <0x13c10000 0x1200>;
+		};
+
+		ufs: ufs@13d60000 {
+			compatible = "samsung,exynos9820-ufs";
+			reg = <0x13d60000 0x200>,	/* 0: HCI standard */
+			      <0x13d61100 0x200>,	/* 1: Vendor specificed */
+			      <0x13d50000 0x8000>,	/* 2: UNIPRO */
+			      <0x13d70000 0x100>;	/* 3: UFS protector */
+			reg-names = "hci", "vs_hci", "unipro", "ufsp";
+
+			//interrupts = <GIC_SPI 200 IRQ_TYPE_LEVEL_HIGH>;
+			clock-names = "core_clk",
+				      "sclk_unipro_main";
+			clocks = <&cmu_fsys1 CLK_GOUT_FSYS1_UFS_ACLK>,
+				 <&cmu_cmu CLK_DOUT_CMU_FSYS1_UFS>;
+			freq-table-hz = <0 0>, <0 0>;
+
+#if 0
+			pinctrl-names = "default";
+			pinctrl-0 = <&ufs_rst_n &ufs_refclk_out>;
+#endif
+
+			phys = <&ufs_phy>;
+			phy-names = "ufs-phy";
+
+			dma-coherent;
+			samsung,sysreg = <&sysreg_fsys1 0x700>;
+
+			status = "disabled";
+		};
+
+		ufs_phy: ufs-phy@13d64000 {
+			reg = <0x13d64000 0x800>;
+			reg-names = "phy-pma";
+			#phy-cells = <0>;
+			samsung,pmu-syscon = <&pmu_system_controller>;
+		};
+
 		cmu_cmu: clock-controller@1a240000 {
 			compatible = "samsung,exynos9820-cmu-cmu";
 			reg = <0x1a240000 0x8000>;
@@ -217,6 +258,22 @@
 
 			clock-names = "oscclk";
 			clocks = <&oscclk>;
+		};
+
+		cmu_fsys1: clock-controller@13c00000 {
+			compatible = "samsung,exynos9820-cmu-fsys1";
+			reg = <0x13c00000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "dout_cmu_fsys1_ufs";
+			clocks = <&oscclk>,
+				 <&cmu_cmu CLK_DOUT_CMU_FSYS1_UFS>;
+		};
+
+		pmu_system_controller: system-controller@15860000 {
+			compatible = "samsung,exynos9820-pmu", "syscon";
+			reg = <0x15860000 0x10000>;
 		};
 
 		/* TODO: interrupts, add driver support */
@@ -227,11 +284,13 @@
 
 	timer {
 		compatible = "arm,armv8-timer";
+#if 0
 		/* Hypervisor Virtual Timer interrupt is not wired to GIC */
 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>;
+#endif
 		/*
 		 * Non-updatable, broken stock Samsung bootloader does not
 		 * configure CNTFRQ_EL0

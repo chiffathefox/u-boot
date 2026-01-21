@@ -2,7 +2,7 @@
 /*
  * Samsung Galaxy S10 (beyond1lte/SM-G973F) device tree source
  *
- * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ * Copyright (c) 2025 chiffathefox <chiffathefoxx@gmail.com>
  */
 
 /dts-v1/;
@@ -36,5 +36,9 @@
 };
 
 &serial0 {
+	status = "okay";
+};
+
+&ufs {
 	status = "okay";
 };
