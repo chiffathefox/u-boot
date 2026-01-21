@@ -618,6 +618,8 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 			ufs->avail_ln_rx, ufs->avail_ln_tx);
 	}
 
+	// phy_set_bus_width(generic_phy, ufs->avail_ln_rx);
+
 	ret = generic_phy_get_by_name(dev, "ufs-phy", &ufs->phy);
 	if (ret) {
 		dev_err(dev, "failed to get ufs-phy, ret = %d\n", ret);
@@ -697,7 +699,7 @@ static int exynos_ufs_setup_clocks(struct ufs_hba *hba, bool on,
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
 			exynos_ufs_disable_auto_ctrl_hcc(ufs);
 		exynos_ufs_ungate_clks(ufs);
-		exynos_ufs_set_hwacg_control(ufs, false);
+		// exynos_ufs_set_hwacg_control(ufs, false);
 	} else if (!on && status == POST_CHANGE) {
 		exynos_ufs_gate_clks(ufs);
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
@@ -756,18 +758,22 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 	struct exynos_ufs *ufs = dev_get_priv(dev);
 	struct exynos_ufs_uic_attr *attr = ufs->drv_data->uic_attr;
 	u32 val = ilog2(DATA_UNIT_SIZE);
+	u32 nutrs = (hba->capabilities & MASK_TRANSFER_REQUESTS_SLOTS_SDB) + 1;
+	u32 nutmrs = 
+	((hba->capabilities & MASK_TASK_MANAGEMENT_REQUEST_SLOTS) >> 16) + 1;
 
 	exynos_ufs_establish_connt(ufs);
 	exynos_ufs_fit_aggr_timeout(ufs);
 
 	hci_writel(ufs, 0xa, HCI_DATA_REORDER);
 
+	if (hba->caps & UFSHCD_CAP_CRYPTO)
+		val |= PRDT_PREFETCH_EN;
 	hci_writel(ufs, val, HCI_TXPRDT_ENTRY_SIZE);
 
 	hci_writel(ufs, ilog2(DATA_UNIT_SIZE), HCI_RXPRDT_ENTRY_SIZE);
-	// TODO:
-	// hci_writel(ufs, BIT(hba->nutrs) - 1, HCI_UTRL_NEXUS_TYPE);
-	// hci_writel(ufs, BIT(hba->nutmrs) - 1, HCI_UTMRL_NEXUS_TYPE);
+	hci_writel(ufs, BIT(nutrs) - 1, HCI_UTRL_NEXUS_TYPE);
+	hci_writel(ufs, BIT(nutmrs) - 1, HCI_UTMRL_NEXUS_TYPE);
 	hci_writel(ufs, 0xf, HCI_AXIDMA_RWDATA_BURST_LEN);
 
 	if (ufs->opts & EXYNOS_UFS_OPT_SKIP_CONNECTION_ESTAB)
@@ -811,7 +817,7 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 		}
 	}
 
-	generic_phy_configure(&ufs->phy, NULL); // should be calibrate
+	generic_phy_configure(&ufs->phy, NULL); // TODO: should be calibrate
 
 	if (ufs->drv_data->post_link)
 		ufs->drv_data->post_link(ufs);
@@ -942,6 +948,8 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	exynos_ufs_config_smu(ufs);
 	exynos_ufs_debug_init(&ufs->debug, hba);
 
+	// hba->host->dma_alignment = DATA_UNIT_SIZE - 1;
+
 	return 0;
 }
 
@@ -987,6 +995,14 @@ static int exynos_ufs_hce_enable_notify(struct ufs_hba *hba,
 
 	switch (status) {
 	case PRE_CHANGE:
+		/*
+		 * The maximum segment size must be set after scsi_host_alloc()
+		 * has been called and before LUN scanning starts
+		 * (ufshcd_async_scan()). Note: this callback may also be called
+		 * from other functions than ufshcd_init().
+		 */
+		// hba->host->max_segment_size = DATA_UNIT_SIZE;
+
 		if (ufs->drv_data->pre_hce_enable) {
 			ret = ufs->drv_data->pre_hce_enable(ufs);
 			if (ret)
