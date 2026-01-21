@@ -2,7 +2,7 @@
 /*
  * Samsung Exynos 9820 SoC device tree source
  *
- * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ * Copyright (c) 2025 chiffathefox <chiffathefoxx@gmail.com>
  */
 
 #include <dt-bindings/clock/exynos9820.h>
@@ -14,9 +14,8 @@
 	#address-cells = <2>;
 	#size-cells = <1>;
 
-#if 0
 	interrupt-parent = <&gic>;
-#endif
+
 	aliases {
 	};
 
@@ -161,9 +160,9 @@
 			reg = <0x10000000 0x100>;
 		};
 #endif
-#if 0
+
 		gic: interrupt-controller@10100000 {
-			compatible = "arm,gic-400";
+			compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
 
 			#interrupt-cells = <3>;
 			#address-cells = <0>;
@@ -173,10 +172,9 @@
 			      <0x10102000 0x1000>,
 			      <0x10104000 0x2000>,
 			      <0x10106000 0x2000>;
-			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(8) |
+			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) |
 						 IRQ_TYPE_LEVEL_HIGH)>;
 		};
-#endif
 
 		cmu_peric0: clock-controller@10400000 {
 			compatible = "samsung,exynos9820-cmu-peric0";
@@ -184,34 +182,113 @@
 			#clock-cells = <1>;
 
 			clock-names = "oscclk",
-				      "cmu_peric0_uart0";
+				      "bus",
+				      "ip";
 			clocks = <&oscclk>,
-				 <&cmu_cmu CLK_MOUT_CMU_PERIC0_UART0>;
+				 <&cmu_top CLK_DOUT_CMU_PERIC0_BUS>,
+				 <&cmu_top CLK_DOUT_CMU_PERIC0_IP>;
 		};
 
 		serial0: serial@10440000 {
 			compatible = "samsung,exynos7870-uart",
 				     "samsung,exynos8895-uart";
 			reg = <0x10440000 0x100>;
-#if 0
-			interrupts = <GIC_SPI INTREQ__UART_DBG IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>;
 
+#if 0
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart0_bus>;
 #endif
 
 			clock-names = "uart",
 				      "clk_uart_baud0";
-			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_UART0_PCLK>,
-				 <&cmu_peric0 CLK_DOUT_PERIC0_UART0_SCLK>;
+			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_UART_DBG_PCLK>,
+				 <&cmu_peric0 CLK_GOUT_PERIC0_UART_DBG_IPCLK>;
 
 			samsung,uart-fifosize = <256>;
 
 			status = "disabled";
 		};
 
-		cmu_cmu: clock-controller@1a240000 {
-			compatible = "samsung,exynos9820-cmu-cmu";
+		sysreg_fsys1: syscon@13c10000 {
+			compatible = "samsung,exynos9820-fsys1-sysreg", "syscon";
+			reg = <0x13c10000 0x1200>;
+		};
+
+		ufs: ufs@13d60000 {
+			compatible = "samsung,exynos9820-ufs";
+			reg = <0x13d60000 0x200>,	/* 0: HCI standard */
+			      <0x13d61100 0x200>,	/* 1: Vendor specificed */
+			      <0x13d50000 0x8000>,	/* 2: UNIPRO */
+			      <0x13d70000 0x100>;	/* 3: UFS protector */
+			reg-names = "hci", "vs_hci", "unipro", "ufsp";
+
+			interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>;
+			clock-names = "core_clk",
+				      "sclk_unipro_main",
+				      "fmp";
+			clocks = <&cmu_fsys1 CLK_GOUT_FSYS1_UFS_EMBD_I_ACLK>,
+				 <&cmu_fsys1 CLK_GOUT_FSYS1_UFS_EMBD_I_CLK_UNIPRO>,
+				 <&cmu_fsys1 CLK_GOUT_FSYS1_UFS_EMBD_I_FMP_CLK>;
+			freq-table-hz = <0 0>,
+					<0 0>,
+					<0 0>;
+
+#if 0
+			pinctrl-names = "default";
+			pinctrl-0 = <&ufs_rst_n &ufs_refclk_out>;
+#endif
+
+			phys = <&ufs_phy>;
+			phy-names = "ufs-phy";
+
+			dma-coherent;
+			samsung,sysreg = <&sysreg_fsys1 0x700>;
+
+			status = "disabled";
+		};
+
+		ufs_phy: ufs-phy@13d64000 {
+			compatible = "samsung,exynos9820-ufs-phy";
+			reg = <0x13d64000 0x800>;
+			reg-names = "phy-pma";
+			#phy-cells = <0>;
+			samsung,pmu-syscon = <&pmu_system_controller>;
+		};
+
+		cmu_fsys1: clock-controller@13c00000 {
+			compatible = "samsung,exynos9820-cmu-fsys1";
+			reg = <0x13c00000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus",
+				      "mmc_card",
+				      "pcie",
+				      "ufs_card",
+				      "ufs_embd";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_GOUT_CMU_FSYS1_BUS>,
+				 <&cmu_top CLK_GOUT_CMU_FSYS1_MMC_CARD>,
+				 <&cmu_top CLK_GOUT_CMU_FSYS1_PCIE>,
+				 <&cmu_top CLK_GOUT_CMU_FSYS1_UFS_CARD>,
+				 <&cmu_top CLK_GOUT_CMU_FSYS1_UFS_EMBD>;
+		};
+
+		pmu_system_controller: system-controller@15860000 {
+			compatible = "samsung,exynos9820-pmu", "syscon";
+			reg = <0x15860000 0x10000>;
+
+			reboot: syscon-reboot {
+				compatible = "syscon-reboot";
+				regmap = <&pmu_system_controller>;
+				offset = <0x3A00>; /* SWRESET */
+				mask = <0x2>;
+			};
+		};
+
+		cmu_top: clock-controller@1a240000 {
+			compatible = "samsung,exynos9820-cmu-top";
 			reg = <0x1a240000 0x8000>;
 			#clock-cells = <1>;
 
@@ -227,11 +304,13 @@
 
 	timer {
 		compatible = "arm,armv8-timer";
+
 		/* Hypervisor Virtual Timer interrupt is not wired to GIC */
 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>,
 			    	 <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_LOW)>;
+
 		/*
 		 * Non-updatable, broken stock Samsung bootloader does not
 		 * configure CNTFRQ_EL0

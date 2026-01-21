@@ -2,7 +2,7 @@
 /*
  * Samsung Galaxy S10 (beyond1lte/SM-G973F) device tree source
  *
- * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ * Copyright (c) 2025 chiffathefox <chiffathefoxx@gmail.com>
  */
 
 /dts-v1/;
@@ -19,7 +19,6 @@
 		#address-cells = <2>;
 		#size-cells = <1>;
 		ranges;
-		bootargs = "console=ttySAC0,115200n8 earlyprintk loglevel=8";
 		stdout-path = &serial0;
 	};
 
@@ -36,5 +35,9 @@
 };
 
 &serial0 {
+	status = "okay";
+};
+
+&ufs {
 	status = "okay";
 };
