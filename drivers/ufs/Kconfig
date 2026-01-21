@@ -23,6 +23,13 @@ config UFS_CADENCE
 	  This selects the platform driver for the Cadence UFS host
 	  controller present on present TI's J721e devices.
 
+config UFS_EXYNOS
+	bool "Exynos platform driver for UFS"
+	depends on UFS && ARCH_EXYNOS
+        help
+	  This selects the platform driver for the Exynos UFS host
+	  controller present on Sansung Exynos SoCs.
+
 config UFS_MEDIATEK
 	tristate "MediaTek UFS Host Controller Driver"
 	depends on UFS && ARCH_MEDIATEK
