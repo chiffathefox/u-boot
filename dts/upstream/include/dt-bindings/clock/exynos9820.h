@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
 /*
- * Copyright (c) 2025 chiffathefox <den.9896@gmail.com>
+ * Copyright (c) 2025 chiffathefox <chiffathefoxx@gmail.com>
  *
  * Device Tree binding constants for Exynos9820 clock controller.
  */
@@ -20,6 +20,18 @@
 #define CLK_GOUT_CMU_PERIC0_PERI		9
 #define CLK_DOUT_CMU_PERIC0_PERI		10
 #define CLK_MOUT_CMU_PERIC0_UART0		11
+#define CLK_DOUT_CMU_SHARED4_PLL_DIV2		12
+#define CLK_FOUT_CMU_SHARED4_PLL		13
+#define CLK_MOUT_CMU_FSYS1_UFS			14
+#define CLK_GOUT_CMU_FSYS1_UFS			15
+#define CLK_DOUT_CMU_FSYS1_UFS			16
+
+/* CMU_FSYS1 */
+#define CLK_GOUT_FSYS1_UFS_ACLK			1
+#define CLK_MOUT_FSYS1_UFS_ACLK			2
+#define CLK_DOUT_FSYS1_UFS_ACLK			3
+#define CLK_GOUT_FSYS1_BUS_UFS_ACLK		4
+#define CLK_MOUT_FSYS1_BUS_UFS_ACLK		5
 
 /* CMU_PERIC0 */
 #define CLK_GOUT_PERIC0_UART0_PCLK		2
