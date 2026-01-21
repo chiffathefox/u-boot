@@ -14,7 +14,7 @@
 #include <dm/uclass-id.h>
 #include <linux/bitops.h>
 #include <linux/list.h>
-
+#define LOG_DEBUG 1
 struct cmd_tbl;
 
 /**
