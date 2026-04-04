@@ -281,8 +281,8 @@ static int samsung_ufs_phy_probe(struct udevice *dev)
 	struct samsung_ufs_phy *phy = dev_get_priv(dev);
 	struct resource res;
 	const struct samsung_ufs_phy_drvdata *drvdata;
-	u32 isol_offset;
 	int ret = 0;
+	u32 isol_offset;
 
 	ret = dev_read_resource_byname(dev, "phy-pma", &res);
 	if (ret) {
@@ -290,8 +290,6 @@ static int samsung_ufs_phy_probe(struct udevice *dev)
 		goto out;
 	}
 	phy->reg_pma = (void *)res.start;
-	isol_offset = res.end == res.start ? 0 : (res.end - res.start + 1);
-
 
 	phy->reg_pmu = syscon_regmap_lookup_by_phandle(dev,
 						       "samsung,pmu-syscon");
@@ -307,7 +305,8 @@ static int samsung_ufs_phy_probe(struct udevice *dev)
 	phy->cfgs = drvdata->cfgs;
 	phy->cfgs_hibern8 = drvdata->cfgs_hibern8;
 	memcpy(&phy->isol, &drvdata->isol, sizeof(phy->isol));
-	phy->isol.offset = isol_offset;
+	if (!dev_read_u32_index(dev, "samsung,pmu-syscon", 1, &isol_offset))
+		phy->isol.offset = isol_offset;
 	phy->lane_cnt = PHY_DEF_LANE_CNT;
 
 	ret = samsung_ufs_phy_clks_init(phy);

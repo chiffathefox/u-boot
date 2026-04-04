@@ -33,6 +33,7 @@
  */
 #define HCI_TXPRDT_ENTRY_SIZE	0x00
 #define PRDT_PREFETCH_EN	BIT(31)
+#define PRDT_SET_SIZE(x)	((x) & 0x1F)
 #define HCI_RXPRDT_ENTRY_SIZE	0x04
 #define HCI_1US_TO_CNT_VAL	0x0C
 #define CNT_VAL_1US_MASK	0x3FF
@@ -227,14 +228,35 @@ static int exynos_ufs_shareability(struct exynos_ufs *ufs)
 	return 0;
 }
 
-static int exynos9820_ufs_drv_init(struct exynos_ufs *ufs)
+#define HCI_UFS_ACG_DISABLE		0xFC
+#define HCI_UFS_ACG_DISABLE_EN		BIT(0)
+inline void exynos_ufs_set_hwacg_control(struct exynos_ufs *ufs, bool en)
 {
 	u32 reg;
 
-	/* set ACG to be controlled by UFS_ACG_DISABLE */
-	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
-	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+	/*
+	 * default value 1->0 at KC. so,
+	 * need to set "1(disable HWACG)" during UFS init
+	 */
+	reg = hci_readl(ufs, HCI_UFS_ACG_DISABLE);
+	if (en)
+		hci_writel(ufs, reg & (~HCI_UFS_ACG_DISABLE_EN), HCI_UFS_ACG_DISABLE);
+	else
+		hci_writel(ufs, reg | HCI_UFS_ACG_DISABLE_EN, HCI_UFS_ACG_DISABLE);
 
+}
+
+static int exynos9820_ufs_drv_init(struct exynos_ufs *ufs)
+{
+	// u32 reg;
+
+	// /* set ACG to be controlled by UFS_ACG_DISABLE */
+	// reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	// hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+
+	// Downstream does phy_power_on(&ufs->phy) / exynos_ufs_ctrl_phy_pwr() here
+
+	exynos_ufs_set_hwacg_control(ufs, true);
 	return exynos_ufs_shareability(ufs);
 }
 
@@ -259,32 +281,22 @@ static void exynos_ufs_ctrl_clkstop(struct exynos_ufs *ufs, bool en)
 	u32 ctrl = hci_readl(ufs, HCI_CLKSTOP_CTRL);
 	u32 misc = hci_readl(ufs, HCI_MISC);
 
+	// if (en) {
+	// 	hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
+	// 	hci_writel(ufs, ctrl | CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
+	// } else {
+	// 	hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
+	// 	hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
+	// }
+
+
 	if (en) {
-		hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
+		hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
 		hci_writel(ufs, ctrl | CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
 	} else {
 		hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
-		hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
+		hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
 	}
-}
-
-
-#define HCI_UFS_ACG_DISABLE		0xFC
-#define HCI_UFS_ACG_DISABLE_EN		BIT(0)
-inline void exynos_ufs_set_hwacg_control(struct exynos_ufs *ufs, bool en)
-{
-	u32 reg;
-
-	/*
-	 * default value 1->0 at KC. so,
-	 * need to set "1(disable HWACG)" during UFS init
-	 */
-	reg = hci_readl(ufs, HCI_UFS_ACG_DISABLE);
-	if (en)
-		hci_writel(ufs, reg & (~HCI_UFS_ACG_DISABLE_EN), HCI_UFS_ACG_DISABLE);
-	else
-		hci_writel(ufs, reg | HCI_UFS_ACG_DISABLE_EN, HCI_UFS_ACG_DISABLE);
-
 }
 
 static int exynos_ufs_get_clk_info(struct exynos_ufs *ufs)
@@ -699,7 +711,7 @@ static int exynos_ufs_setup_clocks(struct ufs_hba *hba, bool on,
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
 			exynos_ufs_disable_auto_ctrl_hcc(ufs);
 		exynos_ufs_ungate_clks(ufs);
-		// exynos_ufs_set_hwacg_control(ufs, false);
+		exynos_ufs_set_hwacg_control(ufs, false);
 	} else if (!on && status == POST_CHANGE) {
 		exynos_ufs_gate_clks(ufs);
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
@@ -713,6 +725,9 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 {
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
 
+	dev_err(hba->dev, "start\n");
+	exynos_ufs_show_uic_info(hba);
+
 	/* hci */
 	exynos_ufs_config_intr(ufs, DFES_DEF_L2_ERRS, UNIPRO_L2);
 	exynos_ufs_config_intr(ufs, DFES_DEF_L3_ERRS, UNIPRO_L3);
@@ -721,11 +736,23 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 
 	exynos_ufs_setup_clocks(hba, true, PRE_CHANGE);
 
+	dev_err(hba->dev, "after exynos_ufs_setup_clocks\n");
+	exynos_ufs_show_uic_info(hba);
+
 	/* unipro */
 	exynos_ufs_config_unipro(ufs);
 
+	dev_err(hba->dev, "after exynos_ufs_config_unipro\n");
+	exynos_ufs_show_uic_info(hba);
+
+	dev_err(hba->dev, "pre pre_link\n");
+	exynos_ufs_show_uic_info(hba);
+
 	if (ufs->drv_data->pre_link)
 		ufs->drv_data->pre_link(ufs);
+
+	dev_err(hba->dev, "post pre_link\n");
+	exynos_ufs_show_uic_info(hba);
 
 	/* m-phy */
 	exynos_ufs_phy_init(ufs);
@@ -749,7 +776,8 @@ static void exynos_ufs_fit_aggr_timeout(struct exynos_ufs *ufs)
 	}
 
 	val = exynos_ufs_calc_time_cntr(ufs, IATOVAL_NSEC / CNTR_DIV_VAL);
-	hci_writel(ufs, val & CNT_VAL_1US_MASK, HCI_1US_TO_CNT_VAL);
+	// XXX: TODO: wtf
+	hci_writel(ufs, 0x000000a6, HCI_1US_TO_CNT_VAL);
 }
 
 static int exynos_ufs_post_link(struct ufs_hba *hba)
@@ -885,11 +913,99 @@ static inline void exynos_ufs_priv_init(struct ufs_hba *hba,
 	hba->quirks = ufs->drv_data->quirks;
 }
 
+#define SMC_CMD_FMP_SECURITY	\
+	ARM_SMCCC_CALL_VAL(ARM_SMCCC_FAST_CALL, ARM_SMCCC_SMC_64, \
+			   ARM_SMCCC_OWNER_SIP, 0x1810)
+#define SMC_CMD_SMU		\
+	ARM_SMCCC_CALL_VAL(ARM_SMCCC_FAST_CALL, ARM_SMCCC_SMC_64, \
+			   ARM_SMCCC_OWNER_SIP, 0x1850)
+#define SMU_EMBEDDED			0
+#define SMU_INIT			0
+#define CFG_DESCTYPE_3			3
+
 static void exynos_ufs_fmp_init(struct ufs_hba *hba, struct exynos_ufs *ufs)
 {
-}
+	// struct blk_crypto_profile *profile = &hba->crypto_profile;
+	struct arm_smccc_res res;
+	// int err;
 
-#define exynos_ufs_fmp_fill_prdt NULL
+	// TODO: if (IS_ENABLED(UFS_CRYPTO))
+
+	/*
+	 * Check for the standard crypto support bit, since it's available even
+	 * though the rest of the interface to FMP is nonstandard.
+	 *
+	 * This check should have the effect of preventing the driver from
+	 * trying to use FMP on old Exynos SoCs that don't have FMP.
+	 */
+	if (!(ufshcd_readl(hba, REG_CONTROLLER_CAPABILITIES) &
+	      MASK_CRYPTO_SUPPORT))
+		return;
+
+	/*
+	 * The below sequence of SMC calls to enable FMP can be found in the
+	 * downstream driver source for gs101 and other Exynos-based SoCs.  It
+	 * is the only way to enable FMP that works on SoCs such as gs101 that
+	 * don't make the FMP registers accessible to Linux.  It probably works
+	 * on other Exynos-based SoCs too, and might even still be the only way
+	 * that works.  But this hasn't been properly tested, and this code is
+	 * mutually exclusive with exynos_ufs_config_smu().  So for now only
+	 * enable FMP support on SoCs with EXYNOS_UFS_OPT_UFSPR_SECURE.
+	 */
+	if (!(ufs->opts & EXYNOS_UFS_OPT_UFSPR_SECURE))
+		return;
+
+	/*
+	 * This call (which sets DESCTYPE to 0x3 in the FMPSECURITY0 register)
+	 * is needed to make the hardware use the larger PRDT entry size.
+	 */
+	// BUILD_BUG_ON(sizeof(struct fmp_sg_entry) != 128);
+	arm_smccc_smc(SMC_CMD_FMP_SECURITY, 0, SMU_EMBEDDED, CFG_DESCTYPE_3,
+		      0, 0, 0, 0, &res);
+	if (res.a0) {
+		dev_warn(hba->dev,
+			 "SMC_CMD_FMP_SECURITY failed on init: %ld.  Disabling FMP support.\n",
+			 res.a0);
+		return;
+	}
+	// ufshcd_set_sg_entry_size(hba, sizeof(struct fmp_sg_entry));
+
+	/*
+	 * This is needed to initialize FMP.  Without it, errors occur when
+	 * inline encryption is used.
+	 */
+	arm_smccc_smc(SMC_CMD_SMU, SMU_INIT, SMU_EMBEDDED, 0, 0, 0, 0, 0, &res);
+	if (res.a0) {
+		dev_err(hba->dev,
+			"SMC_CMD_SMU(SMU_INIT) failed: %ld.  Disabling FMP support.\n",
+			res.a0);
+		return;
+	}
+#if 0
+	/* Advertise crypto capabilities to the block layer. */
+	err = devm_blk_crypto_profile_init(hba->dev, profile, 0);
+	if (err) {
+		/* Only ENOMEM should be possible here. */
+		dev_err(hba->dev, "Failed to initialize crypto profile: %d\n",
+			err);
+		return;
+	}
+	profile->max_dun_bytes_supported = AES_BLOCK_SIZE;
+	profile->key_types_supported = BLK_CRYPTO_KEY_TYPE_RAW;
+	profile->dev = hba->dev;
+	profile->modes_supported[BLK_ENCRYPTION_MODE_AES_256_XTS] =
+		DATA_UNIT_SIZE;
+#endif
+	/* Advertise crypto support to ufshcd-core. */
+	hba->caps |= UFSHCD_CAP_CRYPTO;
+
+	/* Advertise crypto quirks to ufshcd-core. */
+	hba->quirks |= UFSHCD_QUIRK_CUSTOM_CRYPTO_PROFILE |
+		       UFSHCD_QUIRK_BROKEN_CRYPTO_ENABLE |
+		       UFSHCD_QUIRK_KEYS_IN_PRDT;
+
+	log_debug("%s: done\n", __func__);
+}
 
 static int exynos_ufs_init(struct ufs_hba *hba)
 {
@@ -946,7 +1062,12 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	exynos_ufs_specify_phy_time_attr(ufs);
 
 	exynos_ufs_config_smu(ufs);
+
+	// TODO: remove
 	exynos_ufs_debug_init(&ufs->debug, hba);
+
+	dev_err(hba->dev, "post ufs init\n");
+	exynos_ufs_show_uic_info(hba);
 
 	// hba->host->dma_alignment = DATA_UNIT_SIZE - 1;
 
@@ -961,7 +1082,8 @@ static int exynos_ufs_host_reset(struct ufs_hba *hba)
 	u32 val;
 	int ret = 0;
 
-	exynos_ufs_disable_auto_ctrl_hcc_save(ufs, &val);
+	// exynos_ufs_disable_auto_ctrl_hcc_save(ufs, &val);
+	exynos_ufs_disable_auto_ctrl_hcc(ufs);
 
 	hci_writel(ufs, UFS_SW_RST_MASK, HCI_SW_RST);
 
@@ -974,7 +1096,7 @@ static int exynos_ufs_host_reset(struct ufs_hba *hba)
 	ret = -ETIMEDOUT;
 
 out:
-	exynos_ufs_auto_ctrl_hcc_restore(ufs, &val);
+	// exynos_ufs_auto_ctrl_hcc_restore(ufs, &val);
 	return ret;
 }
 
@@ -1012,7 +1134,20 @@ static int exynos_ufs_hce_enable_notify(struct ufs_hba *hba,
 		ret = exynos_ufs_host_reset(hba);
 		if (ret)
 			return ret;
+
+		dev_err(hba->dev, "post exynos_ufs_host_reset\n");
+		exynos_ufs_show_uic_info(hba);
+
+		if (ufs->drv_data->post_host_reset) {
+			ret = ufs->drv_data->post_host_reset(ufs);
+			if (ret)
+				return ret;
+		}
+
 		exynos_ufs_dev_hw_reset(hba);
+
+		dev_err(hba->dev, "post exynos_ufs_dev_hw_reset\n");
+		exynos_ufs_show_uic_info(hba);
 		break;
 	case POST_CHANGE:
 		exynos_ufs_calc_pwm_clk_div(ufs);
@@ -1038,7 +1173,11 @@ static int exynos_ufs_link_startup_notify(struct ufs_hba *hba,
 		ret = exynos_ufs_pre_link(hba);
 		break;
 	case POST_CHANGE:
+	dev_err(hba->dev, "pre exynos_ufs_post_link\n");
+	exynos_ufs_show_uic_info(hba);
 		ret = exynos_ufs_post_link(hba);
+	dev_err(hba->dev, "post\n");
+	exynos_ufs_show_uic_info(hba);
 		break;
 	}
 
@@ -1167,6 +1306,76 @@ static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
 	return 0;
 }
 
+static int exynos9820_ufs_post_hce_enable(struct exynos_ufs *ufs)
+{
+	log_debug("%s\n", __func__);
+#if 0
+	u32 reg;
+	/* internal clock control */
+	exynos_ufs_disable_auto_ctrl_hcc(ufs);
+
+	/* period for interrupt aggregation */
+	exynos_ufs_fit_aggr_timeout(ufs);
+
+	/* misc HCI configurations */
+	hci_writel(ufs, 0xA, HCI_DATA_REORDER);
+	hci_writel(ufs, PRDT_PREFETCH_EN | PRDT_SET_SIZE(12),
+			HCI_TXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, PRDT_SET_SIZE(12), HCI_RXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTRL_NEXUS_TYPE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTMRL_NEXUS_TYPE);
+
+	reg = hci_readl(ufs, HCI_AXIDMA_RWDATA_BURST_LEN) &
+					~WLU_BURST_LEN(0);
+	hci_writel(ufs, WLU_EN | WLU_BURST_LEN(3),
+					HCI_AXIDMA_RWDATA_BURST_LEN);
+
+	/*
+	 * Enable HWAGC control by IOP
+	 *
+	 * default value 1->0 at KC.
+	 * always "0"(controlled by UFS_ACG_DISABLE)
+	 */
+	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+#endif
+	return 0;
+}
+
+static int exynos9820_ufs_post_host_reset(struct exynos_ufs *ufs)
+{
+	u32 reg;
+	exynos_ufs_disable_auto_ctrl_hcc(ufs);
+	exynos_ufs_fit_aggr_timeout(ufs);
+
+	/* misc HCI configurations */
+	hci_writel(ufs, 0xA, HCI_DATA_REORDER);
+	hci_writel(ufs, PRDT_PREFETCH_EN | PRDT_SET_SIZE(12),
+			HCI_TXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, PRDT_SET_SIZE(12), HCI_RXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTRL_NEXUS_TYPE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTMRL_NEXUS_TYPE);
+
+	reg = hci_readl(ufs, HCI_AXIDMA_RWDATA_BURST_LEN) &
+					~WLU_BURST_LEN(0);
+	hci_writel(ufs, WLU_EN | WLU_BURST_LEN(3),
+					HCI_AXIDMA_RWDATA_BURST_LEN);
+
+	/*
+	 * Enable HWAGC control by IOP
+	 *
+	 * default value 1->0 at KC.
+	 * always "0"(controlled by UFS_ACG_DISABLE)
+	 */
+	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+
+	dev_err(ufs->hba->dev, "post exynos9820_ufs_post_host_reset\n");
+	exynos_ufs_show_uic_info(ufs->hba);
+
+	return 0;
+}
+
 static struct ufs_hba_ops ufs_hba_exynos_ops = {
 	.init				= exynos_ufs_init,
 	.hce_enable_notify		= exynos_ufs_hce_enable_notify,
@@ -1192,10 +1401,6 @@ static int exynos_ufs_probe(struct udevice *dev)
 
 static struct exynos_ufs_uic_attr exynos9820_uic_attr = {
 	.tx_trailingclks		= 0xff,
-	.pa_dbg_opt_suite1_val		= 0x90913C1C,
-	.pa_dbg_opt_suite1_off		= PA_GS101_DBG_OPTION_SUITE1,
-	.pa_dbg_opt_suite2_val		= 0xE01C115F,
-	.pa_dbg_opt_suite2_off		= PA_GS101_DBG_OPTION_SUITE2,
 };
 
 static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
@@ -1216,6 +1421,8 @@ static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
 	.drv_init		= exynos9820_ufs_drv_init,
 	.pre_link		= exynos9820_ufs_pre_link,
 	.post_link		= exynos9820_ufs_post_link,
+	.post_hce_enable	= exynos9820_ufs_post_hce_enable,
+	.post_host_reset	= exynos9820_ufs_post_host_reset,
 };
 
 static const struct udevice_id exynos_ufs_of_match[] = {

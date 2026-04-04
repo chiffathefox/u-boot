@@ -693,6 +693,83 @@ enum ufshcd_quirks {
 	UFSHCD_QUIRK_BROKEN_LSDBS_CAP			= 1 << 25,
 };
 
+enum ufshcd_caps {
+	/* Allow dynamic clk gating */
+	UFSHCD_CAP_CLK_GATING				= 1 << 0,
+
+	/* Allow hiberb8 with clk gating */
+	UFSHCD_CAP_HIBERN8_WITH_CLK_GATING		= 1 << 1,
+
+	/* Allow dynamic clk scaling */
+	UFSHCD_CAP_CLK_SCALING				= 1 << 2,
+
+	/* Allow auto bkops to enabled during runtime suspend */
+	UFSHCD_CAP_AUTO_BKOPS_SUSPEND			= 1 << 3,
+
+	/*
+	 * This capability allows host controller driver to use the UFS HCI's
+	 * interrupt aggregation capability.
+	 * CAUTION: Enabling this might reduce overall UFS throughput.
+	 */
+	UFSHCD_CAP_INTR_AGGR				= 1 << 4,
+
+	/*
+	 * This capability allows the device auto-bkops to be always enabled
+	 * except during suspend (both runtime and suspend).
+	 * Enabling this capability means that device will always be allowed
+	 * to do background operation when it's active but it might degrade
+	 * the performance of ongoing read/write operations.
+	 */
+	UFSHCD_CAP_KEEP_AUTO_BKOPS_ENABLED_EXCEPT_SUSPEND = 1 << 5,
+
+	/*
+	 * This capability allows host controller driver to automatically
+	 * enable runtime power management by itself instead of waiting
+	 * for userspace to control the power management.
+	 */
+	UFSHCD_CAP_RPM_AUTOSUSPEND			= 1 << 6,
+
+	/*
+	 * This capability allows the host controller driver to turn-on
+	 * WriteBooster, if the underlying device supports it and is
+	 * provisioned to be used. This would increase the write performance.
+	 */
+	UFSHCD_CAP_WB_EN				= 1 << 7,
+
+	/*
+	 * This capability allows the host controller driver to use the
+	 * inline crypto engine, if it is present
+	 */
+	UFSHCD_CAP_CRYPTO				= 1 << 8,
+
+	/*
+	 * This capability allows the controller regulators to be put into
+	 * lpm mode aggressively during clock gating.
+	 * This would increase power savings.
+	 */
+	UFSHCD_CAP_AGGR_POWER_COLLAPSE			= 1 << 9,
+
+	/*
+	 * This capability allows the host controller driver to use DeepSleep,
+	 * if it is supported by the UFS device. The host controller driver must
+	 * support device hardware reset via the hba->device_reset() callback,
+	 * in order to exit DeepSleep state.
+	 */
+	UFSHCD_CAP_DEEPSLEEP				= 1 << 10,
+
+	/*
+	 * This capability allows the host controller driver to use temperature
+	 * notification if it is supported by the UFS device.
+	 */
+	UFSHCD_CAP_TEMP_NOTIF				= 1 << 11,
+
+	/*
+	 * Enable WriteBooster when scaling up the clock and disable
+	 * WriteBooster when scaling the clock down.
+	 */
+	UFSHCD_CAP_WB_WITH_CLK_SCALING			= 1 << 12,
+};
+
 struct ufs_hba {
 	struct			udevice *dev;
 	void __iomem		*mmio_base;
@@ -719,6 +796,7 @@ struct ufs_hba {
 	struct ufs_pwr_mode_info max_pwr_info;
 
 	struct ufs_dev_cmd dev_cmd;
+	u32 caps;
 };
 
 static inline int ufshcd_ops_init(struct ufs_hba *hba)

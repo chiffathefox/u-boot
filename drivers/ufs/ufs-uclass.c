@@ -681,7 +681,7 @@ static int ufshcd_memory_alloc(struct ufs_hba *hba)
 	/* Allocate one Transfer Request Descriptor
 	 * Should be aligned to 1k boundary.
 	 */
-	hba->utrdl = memalign(1024,
+	hba->utrdl = memalign(4096,
 			      ALIGN(sizeof(struct utp_transfer_req_desc),
 				    ARCH_DMA_MINALIGN));
 	if (!hba->utrdl) {
@@ -692,7 +692,7 @@ static int ufshcd_memory_alloc(struct ufs_hba *hba)
 	/* Allocate one Command Descriptor
 	 * Should be aligned to 1k boundary.
 	 */
-	hba->ucdl = memalign(1024,
+	hba->ucdl = memalign(4096,
 			     ALIGN(sizeof(struct utp_transfer_cmd_desc),
 				   ARCH_DMA_MINALIGN));
 	if (!hba->ucdl) {

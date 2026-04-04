@@ -190,6 +190,7 @@ struct exynos_ufs_drv_data {
 	int (*post_link)(struct exynos_ufs *ufs);
 	int (*pre_hce_enable)(struct exynos_ufs *ufs);
 	int (*post_hce_enable)(struct exynos_ufs *ufs);
+	int (*post_host_reset)(struct exynos_ufs *ufs);
 };
 
 struct ufs_phy_time_cfg {
@@ -250,6 +251,7 @@ struct exynos_ufs {
 #define EXYNOS_UFS_MMIO_FUNC(name)					  \
 static inline void name##_writel(struct exynos_ufs *ufs, u32 val, u32 reg)\
 {									  \
+	log_debug("%s: %p + %x <- %x\n", __func__, ufs->reg_##name, reg, val); \
 	writel(val, ufs->reg_##name + reg);				  \
 }									  \
 									  \

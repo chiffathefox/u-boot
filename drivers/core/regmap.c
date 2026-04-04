@@ -584,7 +584,10 @@ int regmap_raw_write_range(struct regmap *map, uint range_num, uint offset,
 	}
 
 	ptr = map_physmem(range->start + offset, val_len, MAP_NOCACHE);
-
+	for (int i = 0; i < val_len; i++) {
+		unsigned v = ((uint8_t *)val)[i];
+		log_debug("%s: %p[%i] <- %x\n", __func__, ptr, i, v);
+	}
 	switch (val_len) {
 	case REGMAP_SIZE_8:
 		__write_8(ptr, val, map->endianness);

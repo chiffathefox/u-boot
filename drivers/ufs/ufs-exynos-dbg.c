@@ -2,6 +2,158 @@
 #include <dm/device_compat.h>
 #include "ufs-exynos.h"
 #include "ufs-exynos-dbg.h"
+#include <linux/arm-smccc.h>
+
+struct exynos_ufs_attr_log {
+	const u32 offset;
+	u32 res;
+	u32 val;
+};
+enum {
+	TX_LANE_0 = 0,
+	TX_LANE_1 = 1,
+	TX_LANE_2 = 2,
+	TX_LANE_3 = 3,
+	RX_LANE_0 = 4,
+	RX_LANE_1 = 5,
+	RX_LANE_2 = 6,
+	RX_LANE_3 = 7,
+};
+
+static struct exynos_ufs_attr_log ufs_log_attr[] = {
+	/* PA Standard */
+	{UIC_ARG_MIB(0x1520),	0, 0},
+	{UIC_ARG_MIB(0x1540),	0, 0},
+	{UIC_ARG_MIB(0x1543),	0, 0},
+	{UIC_ARG_MIB(0x155C),	0, 0},
+	{UIC_ARG_MIB(0x155D),	0, 0},
+	{UIC_ARG_MIB(0x155F),	0, 0},
+	{UIC_ARG_MIB(0x1560),	0, 0},
+	{UIC_ARG_MIB(0x1561),	0, 0},
+	{UIC_ARG_MIB(0x1564),	0, 0},
+	{UIC_ARG_MIB(0x1567),	0, 0},
+	{UIC_ARG_MIB(0x1568),	0, 0},
+	{UIC_ARG_MIB(0x1569),	0, 0},
+	{UIC_ARG_MIB(0x156A),	0, 0},
+	{UIC_ARG_MIB(0x1571),	0, 0},
+	{UIC_ARG_MIB(0x1580),	0, 0},
+	{UIC_ARG_MIB(0x1581),	0, 0},
+	{UIC_ARG_MIB(0x1582),	0, 0},
+	{UIC_ARG_MIB(0x1583),	0, 0},
+	{UIC_ARG_MIB(0x1584),	0, 0},
+	{UIC_ARG_MIB(0x1585),	0, 0},
+	{UIC_ARG_MIB(0x1590),	0, 0},
+	{UIC_ARG_MIB(0x1591),	0, 0},
+	{UIC_ARG_MIB(0x15A1),	0, 0},
+	{UIC_ARG_MIB(0x15A2),	0, 0},
+	{UIC_ARG_MIB(0x15A3),	0, 0},
+	{UIC_ARG_MIB(0x15A4),	0, 0},
+	{UIC_ARG_MIB(0x15A7),	0, 0},
+	{UIC_ARG_MIB(0x15A8),	0, 0},
+	{UIC_ARG_MIB(0x15A9),	0, 0},
+	{UIC_ARG_MIB(0x15C0),	0, 0},
+	{UIC_ARG_MIB(0x15C1),	0, 0},
+	{UIC_ARG_MIB(0x15D2),	0, 0},
+	{UIC_ARG_MIB(0x15D3),	0, 0},
+	{UIC_ARG_MIB(0x15D4),	0, 0},
+	{UIC_ARG_MIB(0x15D5),	0, 0},
+	/* PA Debug */
+	{UIC_ARG_MIB(0x9500),	0, 0},
+	{UIC_ARG_MIB(0x9501),	0, 0},
+	{UIC_ARG_MIB(0x9502),	0, 0},
+	{UIC_ARG_MIB(0x9504),	0, 0},
+	{UIC_ARG_MIB(0x9564),	0, 0},
+	{UIC_ARG_MIB(0x956A),	0, 0},
+	{UIC_ARG_MIB(0x956D),	0, 0},
+	{UIC_ARG_MIB(0x9570),	0, 0},
+	{UIC_ARG_MIB(0x9595),	0, 0},
+	{UIC_ARG_MIB(0x9596),	0, 0},
+	{UIC_ARG_MIB(0x9597),	0, 0},
+	/* DL Standard */
+	{UIC_ARG_MIB(0x2047),	0, 0},
+	{UIC_ARG_MIB(0x2067),	0, 0},
+	/* DL Debug */
+	{UIC_ARG_MIB(0xA000),	0, 0},
+	{UIC_ARG_MIB(0xA005),	0, 0},
+	{UIC_ARG_MIB(0xA007),	0, 0},
+	{UIC_ARG_MIB(0xA010),	0, 0},
+	{UIC_ARG_MIB(0xA011),	0, 0},
+	{UIC_ARG_MIB(0xA020),	0, 0},
+	{UIC_ARG_MIB(0xA021),	0, 0},
+	{UIC_ARG_MIB(0xA022),	0, 0},
+	{UIC_ARG_MIB(0xA023),	0, 0},
+	{UIC_ARG_MIB(0xA024),	0, 0},
+	{UIC_ARG_MIB(0xA025),	0, 0},
+	{UIC_ARG_MIB(0xA026),	0, 0},
+	{UIC_ARG_MIB(0xA027),	0, 0},
+	{UIC_ARG_MIB(0xA028),	0, 0},
+	{UIC_ARG_MIB(0xA029),	0, 0},
+	{UIC_ARG_MIB(0xA02A),	0, 0},
+	{UIC_ARG_MIB(0xA02B),	0, 0},
+	{UIC_ARG_MIB(0xA100),	0, 0},
+	{UIC_ARG_MIB(0xA101),	0, 0},
+	{UIC_ARG_MIB(0xA102),	0, 0},
+	{UIC_ARG_MIB(0xA103),	0, 0},
+	{UIC_ARG_MIB(0xA114),	0, 0},
+	{UIC_ARG_MIB(0xA115),	0, 0},
+	{UIC_ARG_MIB(0xA116),	0, 0},
+	{UIC_ARG_MIB(0xA120),	0, 0},
+	{UIC_ARG_MIB(0xA121),	0, 0},
+	{UIC_ARG_MIB(0xA122),	0, 0},
+	/* NL Standard */
+	/* NL Debug */
+	{UIC_ARG_MIB(0xB011),	0, 0},
+	/* TL Standard */
+	{UIC_ARG_MIB(0x4020),	0, 0},
+	/* TL Debug */
+	{UIC_ARG_MIB(0xC001),	0, 0},
+	{UIC_ARG_MIB(0xC024),	0, 0},
+	{UIC_ARG_MIB(0xC026),	0, 0},
+	/* MPHY PCS Lane 0*/
+	{UIC_ARG_MIB_SEL(0x0021, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0022, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0023, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0024, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0028, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0029, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002A, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002B, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002C, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002D, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0033, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0035, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0036, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0041, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A1, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A2, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A3, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A4, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A7, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00C1, RX_LANE_0+0),	0, 0},
+	/* MPHY PCS Lane 1*/
+	{UIC_ARG_MIB_SEL(0x0021, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0022, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0023, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0024, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0028, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0029, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002A, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002B, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002C, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x002D, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0033, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0035, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0036, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x0041, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A1, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A2, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A3, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A4, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00A7, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x00C1, RX_LANE_0+1),	0, 0},
+	{},
+};
+
 
 #define REG_UTP_TRANSFER_REQ_LIST_CNR 0x64
 
@@ -579,6 +731,14 @@ static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
 	{},
 };
 
+#define SMC_CMD_FMP_SMU_DUMP		(0xC2001870)
+int exynos_smc(unsigned long cmd, unsigned long arg1, unsigned long arg2, unsigned long arg3)
+{
+	struct arm_smccc_res res;
+	arm_smccc_smc(cmd, arg1, arg2, arg3, 0, 0, 0, 0, &res);
+	return res.a0;
+}
+
 static void exynos_ufs_get_sfr(struct ufs_hba *hba,
 					struct exynos_ufs_sfr_log* cfg)
 {
@@ -598,10 +758,8 @@ static void exynos_ufs_get_sfr(struct ufs_hba *hba,
 				cfg->val = ufshcd_readl(hba, cfg->offset);
 			else if (sel_api == LOG_VS_HCI_SFR)
 				cfg->val = hci_readl(ufs, cfg->offset);
-#ifdef CONFIG_SCSI_UFS_FMP_DUMP
 			else if (sel_api == LOG_FMP_SFR)
 				cfg->val = exynos_smc(SMC_CMD_FMP_SMU_DUMP, 0, 0, cfg->offset);
-#endif
 			else if (sel_api == LOG_UNIPRO_SFR)
 				cfg->val = unipro_readl(ufs, cfg->offset);
 			else
@@ -612,6 +770,53 @@ static void exynos_ufs_get_sfr(struct ufs_hba *hba,
 		cfg++;
 	}
 }
+
+static void exynos_ufs_get_attr(struct ufs_hba *hba,
+					struct exynos_ufs_attr_log* cfg)
+{
+	u32 i;
+	u32 intr_enable;
+
+	/* Disable and backup interrupts */
+	intr_enable = ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
+	ufshcd_writel(hba, 0, REG_INTERRUPT_ENABLE);
+
+	while(cfg) {
+		if (cfg->offset == 0)
+			break;
+
+		/* Send DME_GET */
+		ufshcd_writel(hba, cfg->offset, REG_UIC_COMMAND_ARG_1);
+		ufshcd_writel(hba, UIC_CMD_DME_GET, REG_UIC_COMMAND);
+
+		i = 0;
+		while(!(ufshcd_readl(hba, REG_INTERRUPT_STATUS) &
+					UIC_COMMAND_COMPL)) {
+			if (i++ > 20000) {
+				dev_err(hba->dev,
+					"Failed to fetch a value of %x",
+					cfg->offset);
+				goto out;
+			}
+		}
+
+		/* Clear UIC command completion */
+		ufshcd_writel(hba, UIC_COMMAND_COMPL, REG_INTERRUPT_STATUS);
+
+		/* Fetch result and value */
+		cfg->res = ufshcd_readl(hba, REG_UIC_COMMAND_ARG_2 &
+				MASK_UIC_COMMAND_RESULT);
+		cfg->val = ufshcd_readl(hba, REG_UIC_COMMAND_ARG_3);
+
+		/* Next attribute */
+		cfg++;
+	}
+
+out:
+	/* Restore and enable interrupts */
+	ufshcd_writel(hba, intr_enable, REG_INTERRUPT_ENABLE);
+}
+
 
 static void exynos_ufs_dump_sfr(struct ufs_hba *hba,
 					struct exynos_ufs_sfr_log* cfg)
@@ -633,11 +838,33 @@ static void exynos_ufs_dump_sfr(struct ufs_hba *hba,
 	}
 }
 
+static void exynos_ufs_dump_attr(struct ufs_hba *hba,
+					struct exynos_ufs_attr_log* cfg)
+{
+	dev_err(hba->dev, ": --------------------------------------------------- \n");
+	dev_err(hba->dev, ": \t\tATTRIBUTE DUMP\n");
+	dev_err(hba->dev, ": --------------------------------------------------- \n");
+
+	while(cfg) {
+		if (!cfg->offset)
+			break;
+
+		/* Dump */
+		dev_err(hba->dev, ": 0x%04x:\t\t0x%08x\t\t0x%08x\n",
+				cfg->offset, cfg->val, cfg->res);
+
+		/* Next SFR */
+		cfg++;
+	}
+}
+
 void exynos_ufs_show_uic_info(struct ufs_hba *hba)
 {
 	exynos_ufs_get_sfr(hba, ufs_log_sfr);
+	exynos_ufs_get_attr(hba, ufs_log_attr);
 
 	exynos_ufs_dump_sfr(hba, ufs_log_sfr);
+	exynos_ufs_dump_attr(hba, ufs_log_attr);
 }
 
 void exynos_ufs_debug_init(struct exynos_ufs_debug *debug, struct ufs_hba *hba) {
