@@ -698,6 +698,7 @@ static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
 	{"DME_DBG_FLAG_STATUS"		,	UNIP_DME_DBG_FLAG_STATUS,	0},
 	{"DME_DBG_LINKCFG_FSM"		,	UNIP_DME_DBG_LINKCFG_FSM,	0},
 
+	{"PMA SFR"			,	LOG_PMA_SFR,			0},
 
 	{"COMN 0x45"			,	(0x0114),			0},
 	{"COMN 0x46"			,	(0x0118),			0},
