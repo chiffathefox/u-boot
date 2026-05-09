@@ -151,6 +151,37 @@ static struct exynos_ufs_attr_log ufs_log_attr[] = {
 	{UIC_ARG_MIB_SEL(0x00A4, RX_LANE_0+1),	0, 0},
 	{UIC_ARG_MIB_SEL(0x00A7, RX_LANE_0+1),	0, 0},
 	{UIC_ARG_MIB_SEL(0x00C1, RX_LANE_0+1),	0, 0},
+
+
+	{UIC_ARG_MIB_SEL(0x12, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x12, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0xAA, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0xAA, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0xA9, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0xA9, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0xAB, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0xAB, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x11, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x11, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x1B, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x1B, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x2F, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x2F, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x76, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x76, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x84, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x84, RX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x04, TX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x04, TX_LANE_0+1),	0, 0},
+	{UIC_ARG_MIB_SEL(0x25, RX_LANE_0+0),	0, 0},
+	{UIC_ARG_MIB_SEL(0x25, RX_LANE_0+1),	0, 0},
+
+
+	{UIC_ARG_MIB(0x155E),	0, 0},
+	{UIC_ARG_MIB(0x3000),	0, 0},
+	{UIC_ARG_MIB(0x3001),	0, 0},
+	{UIC_ARG_MIB(0x4021),	0, 0},
+	{UIC_ARG_MIB(0x4020),	0, 0},
 	{},
 };
 
@@ -704,6 +735,7 @@ static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
 	{"DME_DBG_CTRL_FSM"		,	UNIP_DME_DBG_CTRL_FSM,	0},
 	{"DME_DBG_FLAG_STATUS"		,	UNIP_DME_DBG_FLAG_STATUS,	0},
 	{"DME_DBG_LINKCFG_FSM"		,	UNIP_DME_DBG_LINKCFG_FSM,	0},
+	{"COMP_CLK_PERIOD"		,	COMP_CLK_PERIOD,	0},
 
 	{"PMA SFR"			,	LOG_PMA_SFR,			0},
 
@@ -734,6 +766,18 @@ static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
 	{"TRSV_L1 0x259"		,	(0x0964),			0},
 	{"TRSV_L1 0x2F2"		,	(0x0BC8),			0},
 
+	{"COMN 0xFC"		,	(0xFC),			0},
+
+	{"TRSV0 0x6D8"		,	(0x6D8),			0},
+	{"TRSV0 0x708"		,	(0x708),			0},
+	{"TRSV0 0x430"		,	(0x430),			0},
+	{"TRSV0 0x628"		,	(0x628),			0},
+	{"TRSV0 0x67C"		,	(0x67C),			0},
+	{"TRSV0 0x688"		,	(0x688),			0},
+	{"TRSV0 0x5A0"		,	(0x5A0),			0},
+	{"TRSV0 0x5A4"		,	(0x5A4),			0},
+	{"TRSV0 0x6E4"		,	(0x6E4),			0},
+
 
 
 	{},
@@ -745,6 +789,17 @@ int exynos_smc(unsigned long cmd, unsigned long arg1, unsigned long arg2, unsign
 	struct arm_smccc_res res;
 	arm_smccc_smc(cmd, arg1, arg2, arg3, 0, 0, 0, 0, &res);
 	return res.a0;
+}
+
+static inline u32 phy_pma_readl(struct exynos_ufs *ufs, u32 reg)
+{
+	// u32 reg1 = hci_readl(ufs, HCI_CLKSTOP_CTRL);
+
+	// hci_writel(ufs, reg1 & ~MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
+	reg = readl((void*)0x13d64000 + reg);
+	// hci_writel(ufs, reg1 | MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
+
+	return reg;
 }
 
 static void exynos_ufs_get_sfr(struct ufs_hba *hba,
@@ -770,8 +825,10 @@ static void exynos_ufs_get_sfr(struct ufs_hba *hba,
 				cfg->val = exynos_smc(SMC_CMD_FMP_SMU_DUMP, 0, 0, cfg->offset);
 			else if (sel_api == LOG_UNIPRO_SFR)
 				cfg->val = unipro_readl(ufs, cfg->offset);
+			else if (sel_api == LOG_PMA_SFR)
+				cfg->val = phy_pma_readl(ufs, cfg->offset);
 			else
-				cfg->val = 0xFFFFFFFF;
+				cfg->val = 0xDEADBEEF;
 		}
 
 		/* Next SFR */

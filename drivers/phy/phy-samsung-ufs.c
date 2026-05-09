@@ -34,8 +34,8 @@
 #define for_each_phy_cfg(cfg) \
 	for (; (cfg)->id; (cfg)++)
 
-#define PHY_DEF_LANE_CNT	1
-
+#define PHY_DEF_LANE_CNT	2
+ void phy_pma_writel(u32 val, u32 reg);
 void samsung_ufs_phy_config(struct samsung_ufs_phy *phy,
 			    const struct samsung_ufs_phy_cfg *cfg,
 			    u8 lane)
@@ -44,11 +44,11 @@ void samsung_ufs_phy_config(struct samsung_ufs_phy *phy,
 
 	switch (lane) {
 	case LANE_0:
-		writel(cfg->val, (phy)->reg_pma + cfg->off_0);
+		phy_pma_writel( cfg->val, cfg->off_0);
 		break;
 	case LANE_1:
 		if (cfg->id == PHY_TRSV_BLK)
-			writel(cfg->val, (phy)->reg_pma + cfg->off_1);
+			phy_pma_writel( cfg->val, cfg->off_1);
 		break;
 	}
 }
@@ -99,7 +99,7 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 	cfg = cfgs[ufs_phy->ufs_phy_state];
 	if (!cfg)
 		goto out;
-	log_debug("%s: found config...\n", __func__);
+	log_debug("%s: found config lane_cnt=%d...\n", __func__, ufs_phy->lane_cnt);
 
 	for_each_phy_cfg(cfg) {
 		for_each_phy_lane(ufs_phy, i) {
@@ -113,6 +113,26 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 			err = ufs_phy->drvdata->wait_for_cal(phy, i);
 			if (err)
 				goto out;
+		}
+
+		if (ufs_phy->ufs_phy_state == CFG_POST_INIT) {
+dev_err(ufs_phy->dev,
+					"ufs_phy->ufs_phy_state == CFG_POST_INIT");
+			const unsigned int timeout_us = 40000;
+			u32 val;
+			u32 off;
+			int err;
+			off = 0x7B4 + 0x400 * i;
+
+			err = readl_poll_timeout(ufs_phy->reg_pma + off,
+						val, (val & 0x8),
+						timeout_us);
+
+			if (err) {
+				dev_err(ufs_phy->dev,
+					"failed to get phy cal done %d\n", err);
+				goto out;
+			}
 		}
 
 		if (ufs_phy->ufs_phy_state == CFG_POST_PWR_HS &&
@@ -290,6 +310,8 @@ static int samsung_ufs_phy_probe(struct udevice *dev)
 		goto out;
 	}
 	phy->reg_pma = (void *)res.start;
+
+	dev_info(dev, "reg_pma=%p\n", phy->reg_pma);
 
 	phy->reg_pmu = syscon_regmap_lookup_by_phandle(dev,
 						       "samsung,pmu-syscon");

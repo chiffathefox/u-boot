@@ -201,7 +201,7 @@ static int ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	start = get_timer(0);
 	do {
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
-		enabled_intr_status = intr_status & hba->intr_mask;
+		enabled_intr_status = intr_status & ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
 		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
 
 		if (get_timer(start) > UFS_UIC_CMD_TIMEOUT) {
@@ -536,6 +536,8 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 		/* failed to get the link up... retire */
 		goto out;
 
+	/* Clear UECPA once due to LINERESET has happened during LINK_STARTUP */
+	ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
 	/* Mark that link is up in PWM-G1, 1-lane, SLOW-AUTO mode */
 	ufshcd_init_pwr_info(hba);
 
@@ -550,8 +552,6 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 	if (ret)
 		goto out;
 
-	/* Clear UECPA once due to LINERESET has happened during LINK_STARTUP */
-	ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
 	ret = ufshcd_make_hba_operational(hba);
 out:
 	if (ret)
@@ -2100,7 +2100,7 @@ static void ufshcd_def_desc_sizes(struct ufs_hba *hba)
 	hba->desc_size.geom_desc = QUERY_DESC_GEOMETRY_DEF_SIZE;
 	hba->desc_size.hlth_desc = QUERY_DESC_HEALTH_DEF_SIZE;
 }
-
+#include "ufs-exynos-dbg.h"
 static int ufs_start(struct ufs_hba *hba)
 {
 	struct ufs_dev_desc card = {0};
@@ -2111,6 +2111,8 @@ static int ufs_start(struct ufs_hba *hba)
 		return ret;
 
 	ret = ufshcd_verify_dev_init(hba);
+	dev_err(hba->dev, "after ufshcd_verify_dev_init\n");
+exynos_ufs_show_uic_info(hba);
 	if (ret)
 		return ret;
 
