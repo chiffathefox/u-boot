@@ -190,7 +190,6 @@ struct exynos_ufs_drv_data {
 	int (*post_link)(struct exynos_ufs *ufs);
 	int (*pre_hce_enable)(struct exynos_ufs *ufs);
 	int (*post_hce_enable)(struct exynos_ufs *ufs);
-	int (*post_host_reset)(struct exynos_ufs *ufs);
 };
 
 struct ufs_phy_time_cfg {

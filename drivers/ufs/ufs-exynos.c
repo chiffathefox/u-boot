@@ -283,14 +283,15 @@ static void exynos_ufs_ctrl_clkstop(struct exynos_ufs *ufs, bool en)
 	u32 ctrl = hci_readl(ufs, HCI_CLKSTOP_CTRL);
 	u32 misc = hci_readl(ufs, HCI_MISC);
 
-	// if (en) {
-	// 	hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
-	// 	hci_writel(ufs, ctrl | CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
-	// } else {
-	// 	hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
-	// 	hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
-	// }
-
+#if 1
+	if (en) {
+		hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
+		hci_writel(ufs, ctrl | CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
+	} else {
+		hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
+		hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
+	}
+#else
 
 	if (en) {
 		hci_writel(ufs, ctrl | CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
@@ -299,6 +300,7 @@ static void exynos_ufs_ctrl_clkstop(struct exynos_ufs *ufs, bool en)
 		hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
 		hci_writel(ufs, ctrl & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
 	}
+#endif
 }
 
 static int exynos_ufs_get_clk_info(struct exynos_ufs *ufs)
@@ -624,6 +626,7 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 	struct udevice *dev = hba->dev;
 	int ret = 0;
 
+	// TODO:
 	// phy_set_bus_width(generic_phy, ufs->avail_ln_rx);
 
 	ret = generic_phy_get_by_name(dev, "ufs-phy", &ufs->phy);
@@ -660,8 +663,8 @@ static void exynos_ufs_config_unipro(struct exynos_ufs *ufs)
 		ufshcd_dme_set(hba, UIC_ARG_MIB(attr->pa_dbg_clk_period_off),
 			       DIV_ROUND_UP(NSEC_PER_SEC, ufs->mclk_rate));
 
-	// ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXTRAILINGCLOCKS),
-	// 		ufs->drv_data->uic_attr->tx_trailingclks);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXTRAILINGCLOCKS),
+			ufs->drv_data->uic_attr->tx_trailingclks);
 
 	if (attr->pa_dbg_opt_suite1_off)
 		ufshcd_dme_set(hba, UIC_ARG_MIB(attr->pa_dbg_opt_suite1_off),
@@ -705,7 +708,6 @@ static int exynos_ufs_setup_clocks(struct ufs_hba *hba, bool on,
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
 			exynos_ufs_disable_auto_ctrl_hcc(ufs);
 		exynos_ufs_ungate_clks(ufs);
-		exynos_ufs_set_hwacg_control(ufs, false);
 	} else if (!on && status == POST_CHANGE) {
 		exynos_ufs_gate_clks(ufs);
 		if (ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL)
@@ -719,9 +721,6 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 {
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
 
-	dev_err(hba->dev, "start\n");
-	exynos_ufs_show_uic_info(hba);
-
 	/* hci */
 	exynos_ufs_config_intr(ufs, DFES_DEF_L2_ERRS, UNIPRO_L2);
 	exynos_ufs_config_intr(ufs, DFES_DEF_L3_ERRS, UNIPRO_L3);
@@ -730,18 +729,8 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 
 	exynos_ufs_setup_clocks(hba, true, PRE_CHANGE);
 
-	dev_err(hba->dev, "after exynos_ufs_setup_clocks\n");
-	exynos_ufs_show_uic_info(hba);
-
 	/* unipro */
 	exynos_ufs_config_unipro(ufs);
-
-	dev_err(hba->dev, "after exynos_ufs_config_unipro\n");
-	exynos_ufs_show_uic_info(hba);
-
-	dev_err(hba->dev, "pre pre_link\n");
-	exynos_ufs_show_uic_info(hba);
-
 
 	if (ufs->avail_ln_rx == 0 || ufs->avail_ln_tx == 0) {
 		ufshcd_dme_get(hba, UIC_ARG_MIB(PA_AVAILRXDATALANES),
@@ -756,18 +745,12 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 	if (ufs->drv_data->pre_link)
 		ufs->drv_data->pre_link(ufs);
 
-	dev_err(hba->dev, "post pre_link\n");
-	exynos_ufs_show_uic_info(hba);
-
 	/* m-phy */
 	exynos_ufs_phy_init(ufs);
 	if (!(ufs->opts & EXYNOS_UFS_OPT_SKIP_CONFIG_PHY_ATTR)) {
 		exynos_ufs_config_phy_time_attr(ufs);
 		exynos_ufs_config_phy_cap_attr(ufs);
 	}
-
-	dev_err(hba->dev, "post phy init\n");
-	exynos_ufs_show_uic_info(hba);
 
 	return 0;
 }
@@ -854,6 +837,7 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 	}
 
 
+	// TODO: questionably? wrong order?
 	if (ufs->drv_data->post_link)
 		ufs->drv_data->post_link(ufs);
 	generic_phy_configure(&ufs->phy, NULL); // TODO: should be calibrate
@@ -1022,7 +1006,7 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	struct exynos_ufs *ufs = dev_get_priv(dev);
 	struct resource res;
 	int ret;
-	g_ufs = ufs;
+	g_ufs = ufs; // TODO: cleanup
 
 	/* exynos-specific hci */
 	ret = dev_read_resource_byname(dev, "vs_hci", &res);
@@ -1057,7 +1041,7 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	exynos_ufs_priv_init(hba, ufs);
 
 
-	dev_err(hba->dev, "ufs state from s-boot?\n");
+	dev_err(hba->dev, "ufs state from s-boot?\n"); // TODO:  cleanup
 	exynos_ufs_show_uic_info(hba);
 
 	exynos_ufs_fmp_init(hba, ufs);
@@ -1083,6 +1067,7 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	dev_err(hba->dev, "post ufs init\n");
 	exynos_ufs_show_uic_info(hba);
 
+	// TODO: remove
 	// hba->host->dma_alignment = DATA_UNIT_SIZE - 1;
 
 	return 0;
@@ -1096,8 +1081,7 @@ static int exynos_ufs_host_reset(struct ufs_hba *hba)
 	u32 val;
 	int ret = 0;
 
-	// exynos_ufs_disable_auto_ctrl_hcc_save(ufs, &val);
-	exynos_ufs_disable_auto_ctrl_hcc(ufs);
+	exynos_ufs_disable_auto_ctrl_hcc_save(ufs, &val);
 
 	hci_writel(ufs, UFS_SW_RST_MASK, HCI_SW_RST);
 
@@ -1110,7 +1094,7 @@ static int exynos_ufs_host_reset(struct ufs_hba *hba)
 	ret = -ETIMEDOUT;
 
 out:
-	// exynos_ufs_auto_ctrl_hcc_restore(ufs, &val);
+	exynos_ufs_auto_ctrl_hcc_restore(ufs, &val);
 	return ret;
 }
 
@@ -1132,6 +1116,7 @@ static int exynos_ufs_hce_enable_notify(struct ufs_hba *hba,
 	switch (status) {
 	case PRE_CHANGE:
 		/*
+		 * TODO: review?
 		 * The maximum segment size must be set after scsi_host_alloc()
 		 * has been called and before LUN scanning starts
 		 * (ufshcd_async_scan()). Note: this callback may also be called
@@ -1148,24 +1133,10 @@ static int exynos_ufs_hce_enable_notify(struct ufs_hba *hba,
 		ret = exynos_ufs_host_reset(hba);
 		if (ret)
 			return ret;
-
-		dev_err(hba->dev, "post exynos_ufs_host_reset\n");
-		exynos_ufs_show_uic_info(hba);
-
-		if (ufs->drv_data->post_host_reset) {
-			ret = ufs->drv_data->post_host_reset(ufs);
-			if (ret)
-				return ret;
-		}
-
 		exynos_ufs_dev_hw_reset(hba);
 
-		dev_err(hba->dev, "post exynos_ufs_dev_hw_reset\n");
+		dev_err(hba->dev, "post exynos_ufs_dev_hw_reset\n");// TODO: remove
 		exynos_ufs_show_uic_info(hba);
-
-		
-		hci_writel(ufs, 0, 0x114);
-		hci_writel(ufs, 1, 0x110);
 		break;
 	case POST_CHANGE:
 		exynos_ufs_calc_pwm_clk_div(ufs);
@@ -1185,19 +1156,22 @@ static int exynos_ufs_link_startup_notify(struct ufs_hba *hba,
 					  enum ufs_notify_change_status status)
 {
 	int ret = 0;
+	const char *name = status == PRE_CHANGE ? "pre_link" : "post_link";
 
+	dev_err(hba->dev, "pre %s\n", name); // TODO: remove
+	exynos_ufs_show_uic_info(hba);
+	
 	switch (status) {
 	case PRE_CHANGE:
 		ret = exynos_ufs_pre_link(hba);
 		break;
 	case POST_CHANGE:
-	dev_err(hba->dev, "pre exynos_ufs_post_link\n");
-	exynos_ufs_show_uic_info(hba);
 		ret = exynos_ufs_post_link(hba);
-	dev_err(hba->dev, "post\n");
-	exynos_ufs_show_uic_info(hba);
 		break;
 	}
+
+	dev_err(hba->dev, "post %s\n", name);
+	exynos_ufs_show_uic_info(hba);
 
 	return ret;
 }
@@ -1326,12 +1300,48 @@ static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
 	return 0;
 }
 
+static int exynos9820_ufs_post_host_reset(struct exynos_ufs *ufs)
+{
+	u32 reg;
+	exynos_ufs_disable_auto_ctrl_hcc(ufs);
+	exynos_ufs_fit_aggr_timeout(ufs);
+
+	/* misc HCI configurations */
+	hci_writel(ufs, 0xA, HCI_DATA_REORDER);
+	hci_writel(ufs, PRDT_PREFETCH_EN | PRDT_SET_SIZE(12),
+			HCI_TXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, PRDT_SET_SIZE(12), HCI_RXPRDT_ENTRY_SIZE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTRL_NEXUS_TYPE);
+	hci_writel(ufs, 0xFFFFFFFF, HCI_UTMRL_NEXUS_TYPE);
+
+	reg = hci_readl(ufs, HCI_AXIDMA_RWDATA_BURST_LEN) &
+					~WLU_BURST_LEN(0);
+	hci_writel(ufs, WLU_EN | WLU_BURST_LEN(3),
+					HCI_AXIDMA_RWDATA_BURST_LEN);
+
+	/*
+	 * Enable HWAGC control by IOP
+	 *
+	 * default value 1->0 at KC.
+	 * always "0"(controlled by UFS_ACG_DISABLE)
+	 */
+	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+
+
+		hci_writel(ufs, 0, 0x114);
+		hci_writel(ufs, 1, 0x110);
+
+	dev_err(ufs->hba->dev, "post exynos9820_ufs_post_host_reset\n");
+	exynos_ufs_show_uic_info(ufs->hba);
+
+	return 0;
+}
+
 static int exynos9820_ufs_post_hce_enable(struct exynos_ufs *ufs)
 {
 	log_debug("%s\n", __func__);
-	exynos_ufs_disable_auto_ctrl_hcc(ufs);
-	hci_writel(ufs, hci_readl(ufs, HCI_CLKSTOP_CTRL) & ~CLK_STOP_MASK, HCI_CLKSTOP_CTRL);
-	exynos_ufs_set_hwacg_control(ufs, false);
+	exynos9820_ufs_post_host_reset(ufs);
 #if 0
 	u32 reg;
 	/* internal clock control */
@@ -1362,40 +1372,6 @@ static int exynos9820_ufs_post_hce_enable(struct exynos_ufs *ufs)
 	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
 	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
 #endif
-	return 0;
-}
-
-static int exynos9820_ufs_post_host_reset(struct exynos_ufs *ufs)
-{
-	u32 reg;
-	exynos_ufs_disable_auto_ctrl_hcc(ufs);
-	exynos_ufs_fit_aggr_timeout(ufs);
-
-	/* misc HCI configurations */
-	hci_writel(ufs, 0xA, HCI_DATA_REORDER);
-	hci_writel(ufs, PRDT_PREFETCH_EN | PRDT_SET_SIZE(12),
-			HCI_TXPRDT_ENTRY_SIZE);
-	hci_writel(ufs, PRDT_SET_SIZE(12), HCI_RXPRDT_ENTRY_SIZE);
-	hci_writel(ufs, 0xFFFFFFFF, HCI_UTRL_NEXUS_TYPE);
-	hci_writel(ufs, 0xFFFFFFFF, HCI_UTMRL_NEXUS_TYPE);
-
-	reg = hci_readl(ufs, HCI_AXIDMA_RWDATA_BURST_LEN) &
-					~WLU_BURST_LEN(0);
-	hci_writel(ufs, WLU_EN | WLU_BURST_LEN(3),
-					HCI_AXIDMA_RWDATA_BURST_LEN);
-
-	/*
-	 * Enable HWAGC control by IOP
-	 *
-	 * default value 1->0 at KC.
-	 * always "0"(controlled by UFS_ACG_DISABLE)
-	 */
-	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
-	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
-
-	dev_err(ufs->hba->dev, "post exynos9820_ufs_post_host_reset\n");
-	exynos_ufs_show_uic_info(ufs->hba);
-
 	return 0;
 }
 
@@ -1445,7 +1421,6 @@ static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
 	.pre_link		= exynos9820_ufs_pre_link,
 	.post_link		= exynos9820_ufs_post_link,
 	.post_hce_enable	= exynos9820_ufs_post_hce_enable,
-	.post_host_reset	= exynos9820_ufs_post_host_reset,
 };
 
 static const struct udevice_id exynos_ufs_of_match[] = {
