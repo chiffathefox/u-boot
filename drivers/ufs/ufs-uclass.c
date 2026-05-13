@@ -662,9 +662,17 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
 	response_offset = offsetof(struct utp_transfer_cmd_desc, response_upiu);
 	prdt_offset = offsetof(struct utp_transfer_cmd_desc, prd_table);
 
-	utrdlp->response_upiu_offset = cpu_to_le16(response_offset >> 2);
-	utrdlp->prd_table_offset = cpu_to_le16(prdt_offset >> 2);
-	utrdlp->response_upiu_length = cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
+	if (hba->quirks & UFSHCD_QUIRK_PRDT_BYTE_GRAN) {
+		utrdlp->response_upiu_offset = cpu_to_le16(response_offset);
+		utrdlp->prd_table_offset = cpu_to_le16(prdt_offset);
+		utrdlp->response_upiu_length = cpu_to_le16(ALIGNED_UPIU_SIZE);
+	} else {
+		utrdlp->response_upiu_offset =
+			cpu_to_le16(response_offset >> 2);
+		utrdlp->prd_table_offset = cpu_to_le16(prdt_offset >> 2);
+		utrdlp->response_upiu_length =
+			cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
+	}
 
 	hba->ucd_req_ptr = (struct utp_upiu_req *)hba->ucdl;
 	hba->ucd_rsp_ptr =
@@ -1009,6 +1017,10 @@ static int ufshcd_copy_query_response(struct ufs_hba *hba)
 	return 0;
 }
 
+// TODO: ufs: cleanup
+void exynos_ufs_set_nexus_t_xfer_req(struct ufs_hba *hba,
+				int tag, void *cmd);
+
 /**
  * ufshcd_exec_dev_cmd - API for sending device management requests
  */
@@ -1021,7 +1033,8 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba, enum dev_cmd_type cmd_type,
 	err = ufshcd_comp_devman_upiu(hba, cmd_type);
 	if (err)
 		return err;
-
+		// TODO: ufs: cleanup
+exynos_ufs_set_nexus_t_xfer_req(hba,TASK_TAG,  NULL);
 	err = ufshcd_send_command(hba, TASK_TAG);
 	if (err)
 		return err;
@@ -1654,7 +1667,8 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 	prepare_prdt_table(hba, pccb);
 
 	ufshcd_cache_flush(pccb->pdata, pccb->datalen);
-
+// TODO: ufs: cleanup
+exynos_ufs_set_nexus_t_xfer_req(hba,TASK_TAG,  1);
 	ufshcd_send_command(hba, TASK_TAG);
 
 	ufshcd_cache_invalidate(pccb->pdata, pccb->datalen);

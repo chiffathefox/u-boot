@@ -94,8 +94,8 @@ static const struct samsung_ufs_phy_cfg exynos9820_post_init_cfg[] = {
 	PHY_COMN_REG_CFG(0xFC>>2, 0x00, PWR_MODE_ANY),
 
 	// Disable lane1
-	// PHY_COMN_REG_CFG((0x558+0x400)>>2, 0x10, PWR_MODE_ANY),
-	// PHY_COMN_REG_CFG((0x568+0x400)>>2, 0x0A, PWR_MODE_ANY),
+	PHY_COMN_REG_CFG((0x558+0x400)>>2, 0x10, PWR_MODE_ANY),
+	PHY_COMN_REG_CFG((0x568+0x400)>>2, 0x0A, PWR_MODE_ANY),
 
 
 	END_UFS_PHY_CFG,

@@ -238,12 +238,12 @@ static int samsung_ufs_phy_power_on(struct phy *phy)
 			return ret;
 		}
 	}
-
-	if (ss_phy->ufs_phy_state == CFG_PRE_INIT) {
-		ret = samsung_ufs_phy_calibrate(phy);
-		if (ret)
-			dev_err(ss_phy->dev, "ufs phy calibration failed\n");
-	}
+// TODO: ufs: cleanup
+	// if (ss_phy->ufs_phy_state == CFG_PRE_INIT) {
+	// 	ret = samsung_ufs_phy_calibrate(phy);
+	// 	if (ret)
+	// 		dev_err(ss_phy->dev, "ufs phy calibration failed\n");
+	// }
 
 	return ret;
 }
