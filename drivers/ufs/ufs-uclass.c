@@ -29,6 +29,9 @@
 
 #include "ufs.h"
 
+
+#include "ufs-exynos-dbg.h"
+
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
 				 UFSHCD_ERROR_MASK)
@@ -1700,6 +1703,7 @@ exynos_ufs_set_nexus_t_xfer_req(hba,TASK_TAG,  1);
 		break;
 	default:
 		dev_err(hba->dev, "OCS error from controller = %x\n", ocs);
+exynos_ufs_show_uic_info(hba);
 		return -EINVAL;
 	}
 
@@ -2103,7 +2107,7 @@ static int ufshcd_complete_dev_init(struct ufs_hba *hba)
 out:
 	return err;
 }
-
+int exynos9820_ufs_post_pwr_change(struct ufs_hba *hba);
 static void ufshcd_def_desc_sizes(struct ufs_hba *hba)
 {
 	hba->desc_size.dev_desc = QUERY_DESC_DEVICE_DEF_SIZE;
@@ -2114,7 +2118,7 @@ static void ufshcd_def_desc_sizes(struct ufs_hba *hba)
 	hba->desc_size.geom_desc = QUERY_DESC_GEOMETRY_DEF_SIZE;
 	hba->desc_size.hlth_desc = QUERY_DESC_HEALTH_DEF_SIZE;
 }
-#include "ufs-exynos-dbg.h"
+
 static int ufs_start(struct ufs_hba *hba)
 {
 	struct ufs_dev_desc card = {0};
@@ -2159,9 +2163,10 @@ exynos_ufs_show_uic_info(hba);
 
 			return ret;
 		}
-
+exynos9820_ufs_post_pwr_change(hba);
 		debug("UFS Device %s is up!\n", hba->dev->name);
 		ufshcd_print_pwr_info(hba);
+exynos_ufs_show_uic_info(hba);
 	}
 
 	return 0;

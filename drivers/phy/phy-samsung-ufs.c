@@ -101,6 +101,32 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 		goto out;
 	log_debug("%s: found config lane_cnt=%d...\n", __func__, ufs_phy->lane_cnt);
 
+
+	for_each_phy_lane(ufs_phy, i) {
+		if (ufs_phy->ufs_phy_state == CFG_POST_PWR_HS) {
+dev_err(ufs_phy->dev,
+					"ufs_phy->ufs_phy_state == CFG_POST_PWR_HS\n");
+			const unsigned int timeout_us = 4000;
+			u32 val;
+			u32 off;
+			int err;
+			off = 0x7b8 + 0x400 * i;
+
+
+			phy_pma_writel( 0x10, 0x460 + 0x400 * i);
+			phy_pma_writel( 0x18, 0x460 + 0x400 * i);
+			err = readl_poll_timeout(ufs_phy->reg_pma + off,
+						val, (val & 0x8),
+						timeout_us);
+
+			if (err) {
+				dev_err(ufs_phy->dev,
+					"failed to get cdr wait done %d\n", err);
+				goto out;
+			}
+		}
+	}
+
 	for_each_phy_cfg(cfg) {
 		for_each_phy_lane(ufs_phy, i) {
 			samsung_ufs_phy_config(ufs_phy, cfg, i);
@@ -117,7 +143,7 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 
 		if (ufs_phy->ufs_phy_state == CFG_POST_INIT) {
 dev_err(ufs_phy->dev,
-					"ufs_phy->ufs_phy_state == CFG_POST_INIT");
+					"ufs_phy->ufs_phy_state == CFG_POST_INIT\n");
 			const unsigned int timeout_us = 40000;
 			u32 val;
 			u32 off;

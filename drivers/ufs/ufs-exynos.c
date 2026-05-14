@@ -1472,6 +1472,50 @@ exynos9820_ufs_link_startup_notify(struct ufs_hba *hba,
 	return ret;
 }
 
+static int exynos9820_ufs_pre_pwr_change(struct ufs_hba *hba)
+{
+	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXHSADAPTTYPE), 0x1);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(DL_FC0PROTTIMEOUTVAL), 8064);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(DL_TC0REPLAYTIMEOUTVAL), 28224);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(DL_AFC0REQTIMEOUTVAL), 20160);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA0), 12000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA1), 32000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA2), 16000);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x7888), 8064);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x788C), 28224);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x7890), 20160);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78B8), 12000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78BC), 32000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78C0), 16000);
+
+	return generic_phy_configure(&ufs->phy, NULL);
+}
+
+int exynos9820_ufs_post_pwr_change(struct ufs_hba *hba)
+{
+	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
+
+	return generic_phy_configure(&ufs->phy, NULL);
+}
+
+static int
+exynos9820_ufs_get_max_pwr_mode(struct ufs_hba *hba,
+				struct ufs_pwr_mode_info *max_pwr_info)
+{
+	dev_dbg(hba->dev,
+		"%s: max_pwr_info: valid=%d gear_rx=%u gear_tx=%u lane_rx=%u lane_tx=%u pwr_rx=%u pwr_tx=%u hs_rate=%u\n",
+		__func__, max_pwr_info->is_valid, max_pwr_info->info.gear_rx,
+		max_pwr_info->info.gear_tx, max_pwr_info->info.lane_rx,
+		max_pwr_info->info.lane_tx, max_pwr_info->info.pwr_rx,
+		max_pwr_info->info.pwr_tx, max_pwr_info->info.hs_rate);
+
+	return exynos9820_ufs_pre_pwr_change(hba);
+}
+
 static struct ufs_hba_ops ufs_hba_exynos_ops = {
 	.init				= exynos_ufs_init,
 	.hce_enable_notify		= exynos_ufs_hce_enable_notify,
@@ -1500,6 +1544,7 @@ static struct ufs_hba_ops ufs_hba_exynos9820_ops = {
 	.device_reset			= exynos_ufs_host_reset,
 	.hce_enable_notify		= exynos9820_ufs_hce_enable_notify,
 	.link_startup_notify		= exynos9820_ufs_link_startup_notify,
+	.get_max_pwr_mode		= exynos9820_ufs_get_max_pwr_mode,
 };
 
 static struct exynos_ufs_uic_attr exynos9820_uic_attr = {

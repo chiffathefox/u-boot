@@ -101,9 +101,24 @@ static const struct samsung_ufs_phy_cfg exynos9820_post_init_cfg[] = {
 	END_UFS_PHY_CFG,
 };
 
+static const struct samsung_ufs_phy_cfg exynos9820_pre_pwr_hs[] = {
+	PHY_TRSV_REG_CFG_EXYNOS9820(0x418>>2, 0x3C, PWR_MODE_HS_G3_ANY),
+	PHY_TRSV_REG_CFG_EXYNOS9820(0x4E8>>2, 0x03, PWR_MODE_HS_ANY),
+
+	END_UFS_PHY_CFG,
+};
+
+static const struct samsung_ufs_phy_cfg exynos9820_post_pwr_hs[] = {
+	PHY_TRSV_REG_CFG_EXYNOS9820(0x4E8>>2, 0x01, PWR_MODE_HS_ANY),
+
+	END_UFS_PHY_CFG,
+};
+
 static const struct samsung_ufs_phy_cfg *exynos9820_ufs_phy_cfgs[CFG_TAG_MAX] = {
 	[CFG_PRE_INIT]		= exynos9820_pre_init_cfg,
 	[CFG_POST_INIT]		= exynos9820_post_init_cfg,
+	[CFG_PRE_PWR_HS]	= exynos9820_pre_pwr_hs,
+	[CFG_POST_PWR_HS]	= exynos9820_post_pwr_hs,
 };
 
 static const char * const exynos9820_ufs_phy_clks[] = {
