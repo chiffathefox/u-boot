@@ -104,6 +104,8 @@ static const struct samsung_ufs_phy_cfg exynos9820_post_init_cfg[] = {
 static const struct samsung_ufs_phy_cfg exynos9820_pre_pwr_hs[] = {
 	PHY_TRSV_REG_CFG_EXYNOS9820(0x418>>2, 0x3C, PWR_MODE_HS_G3_ANY),
 	PHY_TRSV_REG_CFG_EXYNOS9820(0x4E8>>2, 0x03, PWR_MODE_HS_ANY),
+	PHY_TRSV_REG_CFG_EXYNOS9820(0x460>>2, 0x10, PWR_MODE_HS_ANY),
+	PHY_TRSV_REG_CFG_EXYNOS9820(0x460>>2, 0x18, PWR_MODE_HS_ANY),
 
 	END_UFS_PHY_CFG,
 };
@@ -131,7 +133,25 @@ static int exynos9820_phy_wait_for_calibration(struct phy *phy, u8 lane)
 	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
 	return 0;
 }
-	
+
+static int exynos9820_phy_wait_for_cdr_lock(struct phy *phy, u8 lane)
+{
+	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
+	const unsigned int timeout_us = 40000;
+	u32 val;
+	u32 off;
+	int err;
+
+	log_debug("%s: on lane %u ...\n", __func__, lane);
+
+	off = 0x7B8 + 0x400 * lane;
+	err = readl_poll_timeout(ufs_phy->reg_pma + off, val, (val & 0x8),
+				 timeout_us);
+	if (err)
+		dev_err(ufs_phy->dev, "failed to get cdr wait done %d\n", err);
+
+	return err;
+}
 
 const struct samsung_ufs_phy_drvdata exynos9820_ufs_phy = {
 	.cfgs = exynos9820_ufs_phy_cfgs,
@@ -143,4 +163,5 @@ const struct samsung_ufs_phy_drvdata exynos9820_ufs_phy = {
 	.clk_list = exynos9820_ufs_phy_clks,
 	.num_clks = ARRAY_SIZE(exynos9820_ufs_phy_clks),
 	.wait_for_cal = exynos9820_phy_wait_for_calibration,
+	.wait_for_cdr = exynos9820_phy_wait_for_cdr_lock,
 };
