@@ -60,7 +60,7 @@
 /* Expose the flag value from utp_upiu_query.value */
 #define MASK_QUERY_UPIU_FLAG_LOC 0xFF
 
-#define MAX_PRDT_ENTRY	262144
+#define MAX_PRDT_ENTRY	4096
 
 /* maximum bytes per request */
 #define UFS_MAX_BYTES	(128 * 256 * 1024)
@@ -1630,11 +1630,14 @@ static inline void prepare_prdt_desc(struct ufshcd_sg_entry *entry,struct scsi_c
 				     unsigned char *buf, ulong len)
 {
 	memset(entry, 0, sizeof(struct ufshcd_sg_entry));
+
 	entry->size = cpu_to_le32(len) | GENMASK(1, 0);
 	// entry->size = cpu_to_le32(len-1);
 	entry->base_addr = cpu_to_le32(lower_32_bits((unsigned long)buf));
 	entry->upper_addr = cpu_to_le32(upper_32_bits((unsigned long)buf));
 	exynos9820_ufs_fmp_fill_prdt(entry, pccb);
+	debug("entry->size=%u entry->base_addr=0x%x entry->upper_addr=0x%x buf=%p\n",
+	      entry->size, entry->base_addr, entry->upper_addr, buf);
 }
 
 static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)

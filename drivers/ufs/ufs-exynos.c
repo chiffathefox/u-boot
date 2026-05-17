@@ -1704,6 +1704,7 @@ void exynos9820_ufs_fmp_fill_prdt(struct ufshcd_sg_entry *entry,
 		     (((u64)pccb->cmd[4]) << 8) | ((u64)pccb->cmd[5]);
 	debug("sector=%llu\n", sector);
 
+	SET_FAS(table, 0);
 	SET_DAS(table, 0);
 return;
 	SET_DAS(table, EXYNOS_FMP_ALGO_MODE_AES_XTS);

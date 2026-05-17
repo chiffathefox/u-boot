@@ -197,6 +197,7 @@ static ulong scsi_read(struct udevice *dev, lbaint_t blknr, lbaint_t blkcnt,
 	uintptr_t buf_addr;
 	struct scsi_cmd *pccb = (struct scsi_cmd *)&tempccb;
 
+	debug("scsi_read: blknr=%lu blkcnt=%lu buffer=%p\n", blknr, blkcnt, buffer);
 	/* Setup device */
 	pccb->target = block_dev->target;
 	pccb->lun = block_dev->lun;
@@ -207,6 +208,8 @@ static ulong scsi_read(struct udevice *dev, lbaint_t blknr, lbaint_t blkcnt,
 		max_blks = uc_plat->max_bytes_per_req / block_dev->blksz;
 	else
 		max_blks = SCSI_MAX_BLK;
+	
+	debug("max_bytes_per_req=%lu max_blks=%lu\n", uc_plat->max_bytes_per_req, max_blks);
 
 	debug("\nscsi_read: dev %d startblk " LBAF
 	      ", blccnt " LBAF " buffer %lx\n",
