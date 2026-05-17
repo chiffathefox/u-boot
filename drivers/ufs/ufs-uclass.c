@@ -26,6 +26,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
+#include <hexdump.h>
 
 #include "ufs.h"
 
@@ -542,8 +543,6 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 		/* failed to get the link up... retire */
 		goto out;
 
-	/* Clear UECPA once due to LINERESET has happened during LINK_STARTUP */
-	ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
 	/* Mark that link is up in PWM-G1, 1-lane, SLOW-AUTO mode */
 	ufshcd_init_pwr_info(hba);
 
@@ -558,6 +557,8 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 	if (ret)
 		goto out;
 
+	/* Clear UECPA once due to LINERESET has happened during LINK_STARTUP */
+	ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
 	ret = ufshcd_make_hba_operational(hba);
 out:
 	if (ret)
@@ -695,7 +696,7 @@ static int ufshcd_memory_alloc(struct ufs_hba *hba)
 	/* Allocate one Transfer Request Descriptor
 	 * Should be aligned to 1k boundary.
 	 */
-	hba->utrdl = memalign(4096,
+	hba->utrdl = memalign(1024,
 			      ALIGN(sizeof(struct utp_transfer_req_desc),
 				    ARCH_DMA_MINALIGN));
 	if (!hba->utrdl) {
@@ -706,7 +707,7 @@ static int ufshcd_memory_alloc(struct ufs_hba *hba)
 	/* Allocate one Command Descriptor
 	 * Should be aligned to 1k boundary.
 	 */
-	hba->ucdl = memalign(4096,
+	hba->ucdl = memalign(1024,
 			     ALIGN(sizeof(struct utp_transfer_cmd_desc),
 				   ARCH_DMA_MINALIGN));
 	if (!hba->ucdl) {
@@ -928,12 +929,16 @@ static int ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	start = get_timer(0);
 	do {
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
+		dev_dbg(hba->dev, "intr_status=0x%x\n", intr_status);
 		enabled_intr_status = intr_status & hba->intr_mask;
 		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
 
 		if (get_timer(start) > QUERY_REQ_TIMEOUT) {
 			dev_err(hba->dev,
 				"Timedout waiting for UTP response\n");
+
+
+exynos_ufs_show_uic_info(hba);
 
 			return -ETIMEDOUT;
 		}
@@ -1620,13 +1625,16 @@ void ufshcd_prepare_utp_scsi_cmd_upiu(struct ufs_hba *hba,
 	ufshcd_cache_flush(ucd_req_ptr, sizeof(*ucd_req_ptr));
 	ufshcd_cache_flush(hba->ucd_rsp_ptr, sizeof(*hba->ucd_rsp_ptr));
 }
-
-static inline void prepare_prdt_desc(struct ufshcd_sg_entry *entry,
+void exynos9820_ufs_fmp_fill_prdt(struct ufshcd_sg_entry *entry,struct scsi_cmd *pccb);
+static inline void prepare_prdt_desc(struct ufshcd_sg_entry *entry,struct scsi_cmd *pccb,
 				     unsigned char *buf, ulong len)
 {
+	memset(entry, 0, sizeof(struct ufshcd_sg_entry));
 	entry->size = cpu_to_le32(len) | GENMASK(1, 0);
+	// entry->size = cpu_to_le32(len-1);
 	entry->base_addr = cpu_to_le32(lower_32_bits((unsigned long)buf));
 	entry->upper_addr = cpu_to_le32(upper_32_bits((unsigned long)buf));
+	exynos9820_ufs_fmp_fill_prdt(entry, pccb);
 }
 
 static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
@@ -1648,19 +1656,48 @@ static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
 	buf = pccb->pdata;
 	i = table_length;
 	while (--i) {
-		prepare_prdt_desc(&prd_table[table_length - i - 1], buf,
+		prepare_prdt_desc(&prd_table[table_length - i - 1], pccb, buf,
 				  MAX_PRDT_ENTRY - 1);
 		buf += MAX_PRDT_ENTRY;
 		datalen -= MAX_PRDT_ENTRY;
 	}
 
-	prepare_prdt_desc(&prd_table[table_length - i - 1], buf, datalen - 1);
+	prepare_prdt_desc(&prd_table[table_length - i - 1], pccb, buf, datalen - 1);
 
-	req_desc->prd_table_length = table_length;
+	if (hba->quirks & UFSHCD_QUIRK_PRDT_BYTE_GRAN) {
+		req_desc->prd_table_length = cpu_to_le16(
+			(u16)(table_length * sizeof(struct ufshcd_sg_entry)) + 16);
+	} else {
+		req_desc->prd_table_length = table_length;
+	}
 	ufshcd_cache_flush(prd_table, sizeof(*prd_table) * table_length);
 	ufshcd_cache_flush(req_desc, sizeof(*req_desc));
 }
 
+/* UPIU Command Priority flags */
+enum {
+	UPIU_CMD_PRIO_NONE	= 0x00,
+	UPIU_CMD_PRIO_HIGH	= 0x04,
+};
+/* IOPP-upiu_flags-v1.2.k5.4 */
+static void set_customized_upiu_flags(struct scsi_cmd *pccb, u32 *upiu_flags)
+{
+	switch (pccb->cmd[0]) {
+	case SCSI_READ10:
+		*upiu_flags |= UPIU_CMD_PRIO_HIGH;
+		break;
+	// case REQ_OP_WRITE:
+	// 	if (lrbp->cmd->request->cmd_flags & REQ_SYNC)
+	// 		*upiu_flags |= UPIU_CMD_PRIO_HIGH;
+	// 	break;
+	// case REQ_OP_FLUSH:
+	// 	*upiu_flags |= UPIU_TASK_ATTR_HEADQ;
+	// 	break;
+	// case REQ_OP_DISCARD:
+	// 	*upiu_flags |= UPIU_TASK_ATTR_ORDERED;
+	// 	break;
+	}
+}
 static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 {
 	struct ufs_hba *hba = dev_get_uclass_priv(scsi_dev->parent);
@@ -1668,7 +1705,15 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 	int ocs, result = 0;
 	u8 scsi_status;
 
+	print_hex_dump("scsi exec cmd: ", DUMP_PREFIX_OFFSET, 16, 1, pccb->cmd, pccb->cmdlen, true);
+	debug("scsi_exec: pccb->datalen=%lu pccb->lun=%u\n", pccb->datalen, pccb->lun);
+	if (pccb->datalen == 16384) {
+
+// exynos_ufs_show_uic_info(hba);
+	}
+
 	ufshcd_prepare_req_desc_hdr(hba, &upiu_flags, pccb->dma_dir);
+set_customized_upiu_flags(pccb, &upiu_flags);
 	ufshcd_prepare_utp_scsi_cmd_upiu(hba, pccb, upiu_flags);
 	prepare_prdt_table(hba, pccb);
 
@@ -1706,7 +1751,6 @@ exynos_ufs_set_nexus_t_xfer_req(hba,TASK_TAG,  1);
 		break;
 	default:
 		dev_err(hba->dev, "OCS error from controller = %x\n", ocs);
-exynos_ufs_show_uic_info(hba);
 		return -EINVAL;
 	}
 
@@ -2133,7 +2177,7 @@ static int ufs_start(struct ufs_hba *hba)
 
 	ret = ufshcd_verify_dev_init(hba);
 	dev_err(hba->dev, "after ufshcd_verify_dev_init\n");
-exynos_ufs_show_uic_info(hba);
+
 	if (ret)
 		return ret;
 
@@ -2170,6 +2214,12 @@ exynos9820_ufs_post_pwr_change(hba);
 		debug("UFS Device %s is up!\n", hba->dev->name);
 		ufshcd_print_pwr_info(hba);
 exynos_ufs_show_uic_info(hba);
+	}
+
+	ret = ufshcd_verify_dev_init(hba);
+	debug("Second ufshcd_verify_dev_init ret=%d\n", ret);
+	if (ret) {
+		return ret;
 	}
 
 	return 0;

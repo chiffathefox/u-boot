@@ -961,9 +961,9 @@ int cmdline_set_arg(char *buf, int maxlen, const char *cmdline,
 		 *           / \    \
 		 *    arg_end  val   val_end
 		 */
-		log_debug("from %s arg_end %ld val %ld val_end %ld\n", from,
-			  (long)(arg_end - from), (long)(val - from),
-			  (long)(val_end - from));
+		// log_debug("from %s arg_end %ld val %ld val_end %ld\n", from,
+		// 	  (long)(arg_end - from), (long)(val - from),
+		// 	  (long)(val_end - from));
 
 		if (to != buf) {
 			if (to >= end)

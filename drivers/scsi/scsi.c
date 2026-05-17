@@ -569,6 +569,7 @@ static int scsi_detect_dev(struct udevice *dev, int target, int lun,
 	dev_desc->blksz = blksz;
 	dev_desc->log2blksz = LOG2(dev_desc->blksz);
 	dev_desc->type = perq;
+	debug("capacity=%lu blksz=%lu\n", capacity, blksz);
 removable:
 	return 0;
 }

@@ -574,6 +574,7 @@ enum {
 static struct exynos_ufs_sfr_log ufs_log_sfr[] = {
 	{"STD HCI SFR"			,	LOG_STD_HCI_SFR,		0},
 
+	{"Auto-Hibernate Idle Timer"	,	REG_AUTO_HIBERNATE_IDLE_TIMER,	0},
 	{"INTERRUPT STATUS"		,	REG_INTERRUPT_STATUS,		0},
 	{"INTERRUPT ENABLE"		,	REG_INTERRUPT_ENABLE,		0},
 	{"CONTROLLER STATUS"		,	REG_CONTROLLER_STATUS,		0},
