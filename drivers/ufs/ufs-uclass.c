@@ -63,7 +63,7 @@
 #define MAX_PRDT_ENTRY	4096
 
 /* maximum bytes per request */
-#define UFS_MAX_BYTES	(128 * 256 * 1024)
+#define UFS_MAX_BYTES	(MAX_BUFF * MAX_PRDT_ENTRY)
 
 static inline bool ufshcd_is_hba_active(struct ufs_hba *hba);
 static inline void ufshcd_hba_stop(struct ufs_hba *hba);
@@ -1708,8 +1708,10 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 	int ocs, result = 0;
 	u8 scsi_status;
 
+	if (_DEBUG) {
 	print_hex_dump("scsi exec cmd: ", DUMP_PREFIX_OFFSET, 16, 1, pccb->cmd, pccb->cmdlen, true);
 	debug("scsi_exec: pccb->datalen=%lu pccb->lun=%u\n", pccb->datalen, pccb->lun);
+	}
 	if (pccb->datalen == 16384) {
 
 // exynos_ufs_show_uic_info(hba);
