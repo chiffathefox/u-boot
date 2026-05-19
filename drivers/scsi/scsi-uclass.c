@@ -20,7 +20,7 @@ static void scsi_dump_response(struct scsi_cmd *pccb)
 {                                                                          
   debug("scsi_exec result: cmd=%02x status=%02x datalen=%lu trans_bytes=%lu\n",  
          pccb->cmd[0], pccb->status, pccb->datalen, pccb->trans_bytes);    
-  if (pccb->pdata && pccb->trans_bytes)                                    
+  if (pccb->pdata && pccb->trans_bytes && _DEBUG)                                    
     print_hex_dump("  pdata: ", DUMP_PREFIX_OFFSET, 16, 1,                 
              pccb->pdata, pccb->trans_bytes, true);                        
 }  
@@ -43,7 +43,7 @@ int scsi_get_blk_by_uuid(const char *uuid,
 	static int is_scsi_scanned;
 	struct blk_desc *blk;
 	int i, ret;
-
+	debug("%s\n", __func__);
 	if (!is_scsi_scanned) {
 		scsi_scan(false /* no verbose */);
 		is_scsi_scanned = 1;

@@ -926,16 +926,16 @@ out:
 static void exynos_ufs_dump_sfr(struct ufs_hba *hba,
 					struct exynos_ufs_sfr_log* cfg)
 {
-	dev_err(hba->dev, ": --------------------------------------------------- \n");
-	dev_err(hba->dev, ": \t\tREGISTER DUMP\n");
-	dev_err(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": \t\tREGISTER DUMP\n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
 
 	while(cfg) {
 		if (!cfg->name)
 			break;
 
 		/* Dump */
-		dev_err(hba->dev, ": %s(0x%04x):\t\t\t\t0x%08x\n",
+		dev_dbg(hba->dev, ": %s(0x%04x):\t\t\t\t0x%08x\n",
 				cfg->name, cfg->offset, cfg->val);
 
 		/* Next SFR */
@@ -946,16 +946,16 @@ static void exynos_ufs_dump_sfr(struct ufs_hba *hba,
 static void exynos_ufs_dump_attr(struct ufs_hba *hba,
 					struct exynos_ufs_attr_log* cfg)
 {
-	dev_err(hba->dev, ": --------------------------------------------------- \n");
-	dev_err(hba->dev, ": \t\tATTRIBUTE DUMP\n");
-	dev_err(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
+	dev_dbg(hba->dev, ": \t\tATTRIBUTE DUMP\n");
+	dev_dbg(hba->dev, ": --------------------------------------------------- \n");
 
 	while(cfg) {
 		if (!cfg->offset)
 			break;
 
 		/* Dump */
-		dev_err(hba->dev, ": 0x%04x:\t\t0x%08x\t\t0x%08x\n",
+		dev_dbg(hba->dev, ": 0x%04x:\t\t0x%08x\t\t0x%08x\n",
 				cfg->offset, cfg->val, cfg->res);
 
 		/* Next SFR */
