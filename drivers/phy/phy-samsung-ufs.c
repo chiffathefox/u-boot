@@ -5,6 +5,7 @@
  * Copyright (C) 2020 Samsung Electronics Co., Ltd.
  * Author: Seungwon Jeon <essuuj@gmail.com>
  * Author: Alim Akhtar <alim.akhtar@samsung.com>
+ * Author: chiffathefox <chiffathefoxx@gmail.com>
  *
  */
 
@@ -77,8 +78,6 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 	int err = 0;
 	int i;
 
-	log_debug("%s: calibrating phy_state = %d...\n", __func__, ufs_phy->ufs_phy_state);
-
 	if (unlikely(ufs_phy->ufs_phy_state < CFG_PRE_INIT ||
 		     ufs_phy->ufs_phy_state >= CFG_TAG_MAX)) {
 		dev_err(ufs_phy->dev, "invalid phy config index %d\n", ufs_phy->ufs_phy_state);
@@ -88,7 +87,6 @@ static int samsung_ufs_phy_calibrate(struct phy *phy)
 	cfg = cfgs[ufs_phy->ufs_phy_state];
 	if (!cfg)
 		goto out;
-	log_debug("%s: found config lane_cnt=%d...\n", __func__, ufs_phy->lane_cnt);
 
 	for_each_phy_cfg(cfg) {
 		for_each_phy_lane(ufs_phy, i) {
