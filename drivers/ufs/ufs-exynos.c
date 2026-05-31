@@ -1586,18 +1586,6 @@ U_BOOT_DRIVER(exynos_ufs) = {
 	.probe		= exynos_ufs_probe,
 	.priv_auto	= sizeof(struct exynos_ufs),
 };
-// TODO: ufs: cleanup
- void phy_pma_writel(u32 val, u32 reg)
-{
-	struct exynos_ufs *ufs = g_ufs;
-	// u32 reg1 = hci_readl(ufs, HCI_CLKSTOP_CTRL);
-
-	// hci_writel(ufs, reg1 & ~MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
-	dev_info(ufs->hba->dev, "%s: 0x%x -> 0x%x\n", __func__, val, reg);
-	writel(val, (void*)0x13d64000 + reg);
-	// hci_writel(ufs, reg1 | MPHY_APBCLK_STOP, HCI_CLKSTOP_CTRL);
-}
-
 
 void exynos_ufs_set_nexus_t_xfer_req(struct ufs_hba *hba,
 				int tag, void *cmd)

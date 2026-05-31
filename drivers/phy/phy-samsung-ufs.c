@@ -14,17 +14,6 @@
 #include <dm/device_compat.h>
 #include <linux/iopoll.h>
 #include <linux/ioport.h>
-// #include <linux/clk.h>
-// #include <linux/delay.h>
-// #include <linux/err.h>
-// #include <linux/of.h>
-// #include <linux/io.h>
-// #include <linux/iopoll.h>
-// #include <linux/mfd/syscon.h>
-// #include <linux/module.h>
-// #include <linux/phy/phy.h>
-// #include <linux/platform_device.h>
-// #include <linux/regmap.h>
 #include <syscon.h>
 
 #include "phy-samsung-ufs.h"
@@ -44,11 +33,11 @@ void samsung_ufs_phy_config(struct samsung_ufs_phy *phy,
 
 	switch (lane) {
 	case LANE_0:
-		phy_pma_writel( cfg->val, cfg->off_0);
+		writel(cfg->val, (phy)->reg_pma + cfg->off_0);
 		break;
 	case LANE_1:
 		if (cfg->id == PHY_TRSV_BLK)
-			phy_pma_writel( cfg->val, cfg->off_1);
+			writel(cfg->val, (phy)->reg_pma + cfg->off_1);
 		break;
 	}
 }
