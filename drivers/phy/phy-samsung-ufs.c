@@ -205,12 +205,12 @@ static int samsung_ufs_phy_power_on(struct phy *phy)
 			return ret;
 		}
 	}
-// TODO: ufs: cleanup
-	// if (ss_phy->ufs_phy_state == CFG_PRE_INIT) {
-	// 	ret = samsung_ufs_phy_calibrate(phy);
-	// 	if (ret)
-	// 		dev_err(ss_phy->dev, "ufs phy calibration failed\n");
-	// }
+
+	if (ss_phy->ufs_phy_state == CFG_PRE_INIT) {
+		ret = samsung_ufs_phy_calibrate(phy);
+		if (ret)
+			dev_err(ss_phy->dev, "ufs phy calibration failed\n");
+	}
 
 	return ret;
 }
@@ -277,8 +277,6 @@ static int samsung_ufs_phy_probe(struct udevice *dev)
 		goto out;
 	}
 	phy->reg_pma = (void *)res.start;
-
-	dev_info(dev, "reg_pma=%p\n", phy->reg_pma);
 
 	phy->reg_pmu = syscon_regmap_lookup_by_phandle(dev,
 						       "samsung,pmu-syscon");
