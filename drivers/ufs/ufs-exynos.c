@@ -1078,11 +1078,7 @@ static int exynos_ufs_host_reset(struct ufs_hba *hba)
 	u32 val;
 	int ret = 0;
 
-	dev_dbg(dev, "%s\n", __func__); //TODO: remove
-
 	exynos_ufs_disable_auto_ctrl_hcc_save(ufs, &val);
-
-	dev_dbg(dev, "%s: %u\n", __func__, val); //TODO: remove
 
 	hci_writel(ufs, UFS_SW_RST_MASK, HCI_SW_RST);
 
@@ -1135,10 +1131,8 @@ static int exynos_ufs_hce_enable_notify(struct ufs_hba *hba,
 		if (ret)
 			return ret;
 		exynos_ufs_dev_hw_reset(hba);
-
-		// dev_err(hba->dev, "post exynos_ufs_dev_hw_reset\n");// TODO: remove
-		// exynos_ufs_show_uic_info(hba);
 		break;
+
 	case POST_CHANGE:
 		exynos_ufs_calc_pwm_clk_div(ufs);
 		if (!(ufs->opts & EXYNOS_UFS_OPT_BROKEN_AUTO_CLK_CTRL))
@@ -1175,6 +1169,20 @@ static int exynos_ufs_link_startup_notify(struct ufs_hba *hba,
 	// exynos_ufs_show_uic_info(hba);
 
 	return ret;
+}
+
+static int exynos_ufs_get_max_pwr_mode(struct ufs_hba *hba,
+				       struct ufs_pwr_mode_info *max_pwr_info)
+{
+	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
+
+	if (!max_pwr_info->is_valid)
+		return -EINVAL;
+
+	if (ufs->drv_data->pre_pwr_change)
+		return ufs->drv_data->pre_pwr_change(ufs, &max_pwr_info->info);
+
+	return 0;
 }
 
 static inline u32 get_mclk_period_unipro_18(struct exynos_ufs *ufs)
@@ -1228,7 +1236,7 @@ static void exynos9820_ufs_calib_hibern8_values(void *hba)
 	ufshcd_dme_set(hba, UIC_ARG_MIB(0x15A7), max_rx_hibern8_time_cap + 1);
 }
 
-static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
+static int exynos9820_ufs_post_link1(struct exynos_ufs *ufs)
 {
 	struct ufs_hba *hba = ufs->hba;
 
@@ -1308,7 +1316,7 @@ static void exynos9820_ufs_ctrl_cport_log(struct exynos_ufs *ufs)
 	hci_writel(ufs, 1, 0x110);
 }
 
-static int exynos9820_ufs_pre_hce_enable(struct exynos_ufs *ufs)
+static int exynos9820_ufs_pre_hce_enable1(struct exynos_ufs *ufs)
 {
 	struct ufs_hba *hba = ufs->hba;
 	u32 reg;
@@ -1345,7 +1353,7 @@ static int exynos9820_ufs_pre_hce_enable(struct exynos_ufs *ufs)
 }
 
 static int
-exynos9820_ufs_hce_enable_notify(struct ufs_hba *hba,
+exynos9820_ufs_hce_enable_notify1(struct ufs_hba *hba,
 				 enum ufs_notify_change_status status)
 {
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
@@ -1355,7 +1363,7 @@ exynos9820_ufs_hce_enable_notify(struct ufs_hba *hba,
 
 	switch (status) {
 	case PRE_CHANGE:
-		ret = exynos9820_ufs_pre_hce_enable(ufs);
+		ret = exynos9820_ufs_pre_hce_enable1(ufs);
 		break;
 	case POST_CHANGE:
 		break;
@@ -1364,7 +1372,7 @@ exynos9820_ufs_hce_enable_notify(struct ufs_hba *hba,
 	return ret;
 }
 
-static int exynos9820_ufs_pre_link(struct ufs_hba *hba)
+static int exynos9820_ufs_pre_link1(struct ufs_hba *hba)
 {
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
 	int ret = 0;
@@ -1452,7 +1460,7 @@ static int exynos9820_ufs_pre_link(struct ufs_hba *hba)
 }
 
 static int
-exynos9820_ufs_link_startup_notify(struct ufs_hba *hba,
+exynos9820_ufs_link_startup_notify1(struct ufs_hba *hba,
 				   enum ufs_notify_change_status status)
 {
 	int ret = 0;
@@ -1464,11 +1472,11 @@ exynos9820_ufs_link_startup_notify(struct ufs_hba *hba,
 
 	switch (status) {
 	case PRE_CHANGE:
-		ret = exynos9820_ufs_pre_link(hba);
+		ret = exynos9820_ufs_pre_link1(hba);
 		break;
 	case POST_CHANGE:
 	// TODO: cleaqnup arguments
-		ret = exynos9820_ufs_post_link(ufs);
+		ret = exynos9820_ufs_post_link1(ufs);
 		break;
 	}
 
@@ -1478,7 +1486,7 @@ exynos9820_ufs_link_startup_notify(struct ufs_hba *hba,
 	return ret;
 }
 
-static int exynos9820_ufs_pre_pwr_change(struct ufs_hba *hba)
+static int exynos9820_ufs_pre_pwr_change1(struct ufs_hba *hba)
 {
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
 
@@ -1509,7 +1517,7 @@ int exynos9820_ufs_post_pwr_change(struct ufs_hba *hba)
 }
 
 static int
-exynos9820_ufs_get_max_pwr_mode(struct ufs_hba *hba,
+exynos9820_ufs_get_max_pwr_mode1(struct ufs_hba *hba,
 				struct ufs_pwr_mode_info *max_pwr_info)
 {
 	dev_dbg(hba->dev,
@@ -1519,13 +1527,147 @@ exynos9820_ufs_get_max_pwr_mode(struct ufs_hba *hba,
 		max_pwr_info->info.lane_tx, max_pwr_info->info.pwr_rx,
 		max_pwr_info->info.pwr_tx, max_pwr_info->info.hs_rate);
 
-	return exynos9820_ufs_pre_pwr_change(hba);
+	return exynos9820_ufs_pre_pwr_change1(hba);
+}
+
+static int exynos9820_ufs_post_hce_enable(struct exynos_ufs *ufs)
+{
+	u32 reg;
+	// exynos_ufs_disable_auto_ctrl_hcc(ufs);
+
+	/*
+	 * Enable HWAGC control by IOP
+	 *
+	 * default value 1->0 at KC.
+	 * always "0"(controlled by UFS_ACG_DISABLE)
+	 */
+	reg = hci_readl(ufs, HCI_IOP_ACG_DISABLE);
+	hci_writel(ufs, reg & (~HCI_IOP_ACG_DISABLE_EN), HCI_IOP_ACG_DISABLE);
+
+	exynos9820_ufs_ctrl_cport_log(ufs);
+	exynos_ufs_set_hwacg_control(ufs, false);
+
+	return 0;
+}
+
+static int exynos9820_ufs_pre_link(struct exynos_ufs *ufs)
+{
+	struct ufs_hba *hba = ufs->hba;
+	int i;
+	u32 tx_line_reset_period, rx_line_reset_period;
+
+	pr_err("ufs->avail_ln_rx=%d ufs->avail_ln_tx=%d\n", ufs->avail_ln_rx,
+	       ufs->avail_ln_tx);
+
+	rx_line_reset_period =
+		(RX_LINE_RESET_TIME * ufs->mclk_rate) / NSEC_PER_MSEC;
+	tx_line_reset_period =
+		(TX_LINE_RESET_TIME * ufs->mclk_rate) / NSEC_PER_MSEC;
+
+	unipro_writel(ufs, get_mclk_period_unipro_18(ufs), COMP_CLK_PERIOD);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x200), 0x40);
+
+	for_each_ufs_rx_lane(ufs, i)
+	{
+		dev_info(hba->dev, "%s: rx lane %i\n", __func__,
+			 i); // TODO: remove
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_CLK_PRD, i),
+			       DIV_ROUND_UP(NSEC_PER_SEC, ufs->mclk_rate));
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_CLK_PRD_EN, i), 0x0);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE2, i),
+			       (rx_line_reset_period >> 16) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE1, i),
+			       (rx_line_reset_period >> 8) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_RX_LINERESET_VALUE0, i),
+			       (rx_line_reset_period) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x2F, i), 0x79);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x84, i), 0x1);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x25, i), 0xf6);
+	}
+
+	for_each_ufs_tx_lane(ufs, i)
+	{
+		dev_info(hba->dev, "%s: tx lane %i\n", __func__, i);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_CLK_PRD, i),
+			       DIV_ROUND_UP(NSEC_PER_SEC, ufs->mclk_rate));
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VND_TX_CLK_PRD_EN, i),
+			       0x02);
+		ufshcd_dme_set(hba,
+			       UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE2, i),
+			       (tx_line_reset_period >> 16) & 0xFF);
+		ufshcd_dme_set(hba,
+			       UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE1, i),
+			       (tx_line_reset_period >> 8) & 0xFF);
+		ufshcd_dme_set(hba,
+			       UIC_ARG_MIB_SEL(VND_TX_LINERESET_PVALUE0, i),
+			       (tx_line_reset_period) & 0xFF);
+		ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(0x04, i), 1);
+	}
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x200), 0x0);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_LOCAL_TX_LCC_ENABLE), 0x0);
+
+	return 0;
+}
+
+static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
+{
+	struct ufs_hba *hba = ufs->hba;
+
+	exynos9820_unipro_adapt_length(hba, 0x15D2);
+	exynos9820_unipro_adapt_length(hba, 0x15D3);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x01);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SAVECONFIGTIME), 0x3E8);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x00);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x80000000);
+	udelay(0x7d0);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x0);
+
+	exynos9820_ufs_calib_hibern8_values(hba);
+
+	// TODO: remove
+	struct ufs_pa_layer_attr *p = &hba->pwr_info;
+	pr_err("%s: gear_rx = %u, gear_tx = %u, lane_rx = %u, lane_tx = %u, "
+		  "pwr_rx = %u, pwr_tx = %u, hs_rate = %u, avail_ln_rx = %d, "
+		  "avail_ln_tx = %d\n",
+		  __func__, p->gear_rx, p->gear_tx, p->lane_rx, p->lane_tx,
+		  p->pwr_rx, p->pwr_tx, p->hs_rate, ufs->avail_ln_rx,
+		  ufs->avail_ln_rx);
+	// exynos_ufs_show_uic_info(hba);
+
+	return 0;
+}
+
+static int exynos9820_ufs_pre_pwr_change(struct exynos_ufs *ufs,
+					 struct ufs_pa_layer_attr *pwr)
+{
+	struct ufs_hba *hba = ufs->hba;
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXHSADAPTTYPE), 0x1);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA0), 12000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA1), 32000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_PWRMODEUSERDATA2), 16000);
+
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x7888), 8064);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x788C), 28224);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x7890), 20160);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78B8), 12000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78BC), 32000);
+	ufshcd_dme_set(hba, UIC_ARG_MIB(0x78C0), 16000);
+
+	return 0;
 }
 
 static struct ufs_hba_ops ufs_hba_exynos_ops = {
 	.init				= exynos_ufs_init,
 	.hce_enable_notify		= exynos_ufs_hce_enable_notify,
 	.link_startup_notify		= exynos_ufs_link_startup_notify,
+	.get_max_pwr_mode		= exynos_ufs_get_max_pwr_mode,
 };
 
 static int exynos_ufs_probe(struct udevice *dev)
@@ -1548,17 +1690,16 @@ static int exynos_ufs_probe(struct udevice *dev)
 static struct ufs_hba_ops ufs_hba_exynos9820_ops = {
 	.init				= exynos_ufs_init,
 	.device_reset			= exynos_ufs_host_reset,
-	.hce_enable_notify		= exynos9820_ufs_hce_enable_notify,
-	.link_startup_notify		= exynos9820_ufs_link_startup_notify,
-	.get_max_pwr_mode		= exynos9820_ufs_get_max_pwr_mode,
+	.hce_enable_notify		= exynos9820_ufs_hce_enable_notify1,
+	.link_startup_notify		= exynos9820_ufs_link_startup_notify1,
+	.get_max_pwr_mode		= exynos9820_ufs_get_max_pwr_mode1,
 };
 
 static struct exynos_ufs_uic_attr exynos9820_uic_attr = {
-	.tx_trailingclks		= 0xff,
+	.tx_trailingclks		= 0x3f,
 };
 
 static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
-	.ops			= &ufs_hba_exynos9820_ops,
 	.uic_attr		= &exynos9820_uic_attr,
 	.quirks			= UFSHCD_QUIRK_PRDT_BYTE_GRAN |
 				  UFSHCI_QUIRK_SKIP_RESET_INTR_AGGR |
@@ -1574,6 +1715,10 @@ static const struct exynos_ufs_drv_data exynos9820_ufs_drvs = {
 				  EXYNOS_UFS_OPT_TIMER_TICK_SELECT,
 	.iocc_mask		= EXYNOS9820_SHARABLE,
 	.drv_init		= exynos9820_ufs_drv_init,
+	.post_hce_enable	= exynos9820_ufs_post_hce_enable,
+	.pre_link		= exynos9820_ufs_pre_link,
+	.post_link		= exynos9820_ufs_post_link,
+	.pre_pwr_change		= exynos9820_ufs_pre_pwr_change,
 };
 
 static const struct udevice_id exynos_ufs_of_match[] = {
