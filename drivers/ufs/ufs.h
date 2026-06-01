@@ -476,6 +476,14 @@ static inline int ufshcd_dme_peer_set(struct ufs_hba *hba, u32 attr_sel,
 				   mib_val, DME_PEER);
 }
 
+static inline bool ufshcd_is_hs_mode(const struct ufs_pa_layer_attr *pwr_info)
+{
+	return (pwr_info->pwr_rx == FAST_MODE ||
+		pwr_info->pwr_rx == FASTAUTO_MODE) &&
+	       (pwr_info->pwr_tx == FAST_MODE ||
+		pwr_info->pwr_tx == FASTAUTO_MODE);
+}
+
 /**
  * struct ufs_query_req - parameters for building a query request
  * @query_func: UPIU header query function
