@@ -16,8 +16,8 @@
 #define PHY_TRSV_REG_CFG_EXYNOS9820(o, v, d) \
 	PHY_TRSV_REG_CFG_OFFSET(o, v, d, PHY_EXYNOS9820_LANE_OFFSET)
 
-#define PHY_PMA_TRSV_ADDR(reg, lane)	(PHY_APB_ADDR((reg) + \
-					((lane) * PHY_EXYNOS9820_LANE_OFFSET)))
+#define PHY_TRSV_ADDR_EXYNOS9820(reg, lane) \
+	(PHY_APB_ADDR((reg) + ((lane) * PHY_EXYNOS9820_LANE_OFFSET)))
 
 /* Calibration for phy initialization */
 static const struct samsung_ufs_phy_cfg exynos9820_pre_init_cfg[] = {
@@ -121,12 +121,31 @@ static const struct samsung_ufs_phy_cfg *exynos9820_ufs_phy_cfgs[CFG_TAG_MAX] = 
 static const char * const exynos9820_ufs_phy_clks[] = {
 };
 
+#define EXYNOS9820_CAL_DELAY_US	200
+#define EXYNOS9820_CAL_MASK	0x8
+#define EXYNOS9820_CAL_OFFSET	0x1ed
+
 static int exynos9820_phy_wait_for_calibration(struct phy *phy, u8 lane)
 {
-	log_debug("%s: waitomg on lane %u ...\n", __func__, lane);
-	udelay(0xC8);
+	const unsigned int timeout_us = 40000;
 	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
-	return 0;
+	u32 val;
+	int err;
+
+	udelay(EXYNOS9820_CAL_DELAY_US);
+
+	err = readl_poll_timeout(
+		ufs_phy->reg_pma +
+			PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CAL_OFFSET, lane),
+		val, (val & EXYNOS9820_CAL_MASK), timeout_us);
+
+	if (err) {
+		dev_err(ufs_phy->dev, "failed to get phy cal done %d\n", err);
+		goto out;
+	}
+
+out:
+	return err;
 }
 
 static int exynos9820_phy_wait_for_cdr_lock(struct phy *phy, u8 lane)
