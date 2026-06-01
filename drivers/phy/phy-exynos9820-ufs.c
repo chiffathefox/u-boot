@@ -121,13 +121,13 @@ static const struct samsung_ufs_phy_cfg *exynos9820_ufs_phy_cfgs[CFG_TAG_MAX] = 
 static const char * const exynos9820_ufs_phy_clks[] = {
 };
 
-#define EXYNOS9820_CAL_DELAY_US	200
-#define EXYNOS9820_CAL_MASK	0x8
-#define EXYNOS9820_CAL_OFFSET	0x1ed
+#define EXYNOS9820_CAL_DELAY_US		200
+#define EXYNOS9820_CAL_TIMEOUT_US	40000
+#define EXYNOS9820_CAL_MASK		0x8
+#define EXYNOS9820_CAL_REG		0x1ed
 
 static int exynos9820_phy_wait_for_calibration(struct phy *phy, u8 lane)
 {
-	const unsigned int timeout_us = 40000;
 	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
 	u32 val;
 	int err;
@@ -136,31 +136,29 @@ static int exynos9820_phy_wait_for_calibration(struct phy *phy, u8 lane)
 
 	err = readl_poll_timeout(
 		ufs_phy->reg_pma +
-			PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CAL_OFFSET, lane),
-		val, (val & EXYNOS9820_CAL_MASK), timeout_us);
-
-	if (err) {
+			PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CAL_REG, lane),
+		val, (val & EXYNOS9820_CAL_MASK), EXYNOS9820_CAL_TIMEOUT_US);
+	if (err)
 		dev_err(ufs_phy->dev, "failed to get phy cal done %d\n", err);
-		goto out;
-	}
 
-out:
 	return err;
 }
+
+#define EXYNOS9820_CDR_LOCK_TIMEOUT_US		40000
+#define EXYNOS9820_CDR_LOCK_MASK		0x8
+#define EXYNOS9820_CDR_LOCK_REG			0x1ee
 
 static int exynos9820_phy_wait_for_cdr_lock(struct phy *phy, u8 lane)
 {
 	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
-	const unsigned int timeout_us = 40000;
 	u32 val;
-	u32 off;
 	int err;
 
-	log_debug("%s: on lane %u ...\n", __func__, lane);
-
-	off = 0x7B8 + 0x400 * lane;
-	err = readl_poll_timeout(ufs_phy->reg_pma + off, val, (val & 0x8),
-				 timeout_us);
+	err = readl_poll_timeout(
+		ufs_phy->reg_pma +
+			PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CDR_LOCK_REG, lane),
+		val, (val & EXYNOS9820_CDR_LOCK_MASK),
+		EXYNOS9820_CDR_LOCK_TIMEOUT_US);
 	if (err)
 		dev_err(ufs_phy->dev, "failed to get cdr wait done %d\n", err);
 
