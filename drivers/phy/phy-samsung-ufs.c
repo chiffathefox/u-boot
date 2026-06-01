@@ -25,7 +25,7 @@
 	for (; (cfg)->id; (cfg)++)
 
 #define PHY_DEF_LANE_CNT	2
- void phy_pma_writel(u32 val, u32 reg);
+
 void samsung_ufs_phy_config(struct samsung_ufs_phy *phy,
 			    const struct samsung_ufs_phy_cfg *cfg,
 			    u8 lane)
