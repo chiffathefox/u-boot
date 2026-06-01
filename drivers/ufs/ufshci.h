@@ -5,7 +5,8 @@
 enum {
 	TASK_REQ_UPIU_SIZE_DWORDS	= 8,
 	TASK_RSP_UPIU_SIZE_DWORDS	= 8,
-	ALIGNED_UPIU_SIZE		= 512,
+	ALIGNED_UPIU_SIZE		= 1024,
+	// ALIGNED_UPIU_SIZE		= 512,
 };
 
 /* UFSHCI Registers */
@@ -377,6 +378,34 @@ struct ufshcd_sg_entry {
 	__le32    upper_addr;
 	__le32    reserved;
 	__le32    size;
+	__le32 file_iv0;	/* des4 */
+	__le32 file_iv1;	/* des5 */
+	__le32 file_iv2;	/* des6 */
+	__le32 file_iv3;	/* des7 */
+	__le32 file_enckey0;	/* des8 */
+	__le32 file_enckey1;	/* des9 */
+	__le32 file_enckey2;	/* des10 */
+	__le32 file_enckey3;	/* des11 */
+	__le32 file_enckey4;	/* des12 */
+	__le32 file_enckey5;	/* des13 */
+	__le32 file_enckey6;	/* des14 */
+	__le32 file_enckey7;	/* des15 */
+	__le32 file_twkey0;	/* des16 */
+	__le32 file_twkey1;	/* des17 */
+	__le32 file_twkey2;	/* des18 */
+	__le32 file_twkey3;	/* des19 */
+	__le32 file_twkey4;	/* des20 */
+	__le32 file_twkey5;	/* des21 */
+	__le32 file_twkey6;	/* des22 */
+	__le32 file_twkey7;	/* des23 */
+	__le32 disk_iv0;	/* des24 */
+	__le32 disk_iv1;	/* des25 */
+	__le32 disk_iv2;	/* des26 */
+	__le32 disk_iv3;	/* des27 */
+	__le32 reserved0;	/* des28 */
+	__le32 reserved1;	/* des29 */
+	__le32 reserved2;	/* des30 */
+	__le32 reserved3;	/* des31 */
 };
 
 #define MAX_BUFF	128

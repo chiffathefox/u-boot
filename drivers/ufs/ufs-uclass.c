@@ -56,7 +56,7 @@
 /* Expose the flag value from utp_upiu_query.value */
 #define MASK_QUERY_UPIU_FLAG_LOC 0xFF
 
-#define MAX_PRDT_ENTRY	262144
+#define MAX_PRDT_ENTRY	4096
 
 /* maximum bytes per request */
 #define UFS_MAX_BYTES	(128 * 256 * 1024)
@@ -663,7 +663,7 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
 	prdt_offset = offsetof(struct utp_transfer_cmd_desc, prd_table);
 
 	utrdlp->response_upiu_offset = cpu_to_le16(response_offset >> 2);
-	utrdlp->prd_table_offset = cpu_to_le16(prdt_offset >> 2);
+		utrdlp->prd_table_offset = cpu_to_le16(prdt_offset >> 2);
 	utrdlp->response_upiu_length = cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
 
 	hba->ucd_req_ptr = (struct utp_upiu_req *)hba->ucdl;
@@ -1601,13 +1601,14 @@ void ufshcd_prepare_utp_scsi_cmd_upiu(struct ufs_hba *hba,
 	ufshcd_cache_flush(ucd_req_ptr, sizeof(*ucd_req_ptr));
 	ufshcd_cache_flush(hba->ucd_rsp_ptr, sizeof(*hba->ucd_rsp_ptr));
 }
-
-static inline void prepare_prdt_desc(struct ufshcd_sg_entry *entry,
+void exynos9820_ufs_fmp_fill_prdt(struct ufshcd_sg_entry *entry,struct scsi_cmd *pccb);
+static inline void prepare_prdt_desc(struct ufshcd_sg_entry *entry,struct scsi_cmd *pccb,
 				     unsigned char *buf, ulong len)
 {
 	entry->size = cpu_to_le32(len) | GENMASK(1, 0);
 	entry->base_addr = cpu_to_le32(lower_32_bits((unsigned long)buf));
 	entry->upper_addr = cpu_to_le32(upper_32_bits((unsigned long)buf));
+	exynos9820_ufs_fmp_fill_prdt(entry, pccb);
 }
 
 static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
@@ -1629,15 +1630,15 @@ static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
 	buf = pccb->pdata;
 	i = table_length;
 	while (--i) {
-		prepare_prdt_desc(&prd_table[table_length - i - 1], buf,
+		prepare_prdt_desc(&prd_table[table_length - i - 1], pccb, buf,
 				  MAX_PRDT_ENTRY - 1);
 		buf += MAX_PRDT_ENTRY;
 		datalen -= MAX_PRDT_ENTRY;
 	}
 
-	prepare_prdt_desc(&prd_table[table_length - i - 1], buf, datalen - 1);
+	prepare_prdt_desc(&prd_table[table_length - i - 1], pccb, buf, datalen - 1);
 
-	req_desc->prd_table_length = table_length;
+		req_desc->prd_table_length = table_length;
 	ufshcd_cache_flush(prd_table, sizeof(*prd_table) * table_length);
 	ufshcd_cache_flush(req_desc, sizeof(*req_desc));
 }
