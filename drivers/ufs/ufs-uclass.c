@@ -59,7 +59,7 @@
 #define MAX_PRDT_ENTRY	4096
 
 /* maximum bytes per request */
-#define UFS_MAX_BYTES	(128 * 256 * 1024)
+#define UFS_MAX_BYTES	(MAX_BUFF * MAX_PRDT_ENTRY)
 
 static inline bool ufshcd_is_hba_active(struct ufs_hba *hba);
 static inline void ufshcd_hba_stop(struct ufs_hba *hba);
