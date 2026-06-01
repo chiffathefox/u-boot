@@ -205,9 +205,6 @@ static int ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	start = get_timer(0);
 	do {
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
-		// This error log is somehow important. It adds a delay
-		// Without it DME_INTR_ERROR_CODE is raised
-		dev_dbg(hba->dev, "intr_status=0x%x\n", intr_status);
 		enabled_intr_status = intr_status & ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
 		ufshcd_writel(hba, intr_status, REG_INTERRUPT_STATUS);
 
