@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
+ * UFS PHY driver data for Samsung EXYNOS9820 SoC.
  *
+ * Copyright (C) 2018 Samsung Electronics Co., Ltd.
+ * Author: chiffathefox <chiffathefoxx@gmail.com>
  */
 
 #include <linux/iopoll.h>
