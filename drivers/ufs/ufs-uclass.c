@@ -662,9 +662,17 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
 	response_offset = offsetof(struct utp_transfer_cmd_desc, response_upiu);
 	prdt_offset = offsetof(struct utp_transfer_cmd_desc, prd_table);
 
-	utrdlp->response_upiu_offset = cpu_to_le16(response_offset >> 2);
+	if (hba->quirks & UFSHCD_QUIRK_PRDT_BYTE_GRAN) {
+		utrdlp->response_upiu_offset = cpu_to_le16(response_offset);
+		utrdlp->prd_table_offset = cpu_to_le16(prdt_offset);
+		utrdlp->response_upiu_length = cpu_to_le16(ALIGNED_UPIU_SIZE);
+	} else {
+		utrdlp->response_upiu_offset =
+			cpu_to_le16(response_offset >> 2);
 		utrdlp->prd_table_offset = cpu_to_le16(prdt_offset >> 2);
-	utrdlp->response_upiu_length = cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
+		utrdlp->response_upiu_length =
+			cpu_to_le16(ALIGNED_UPIU_SIZE >> 2);
+	}
 
 	hba->ucd_req_ptr = (struct utp_upiu_req *)hba->ucdl;
 	hba->ucd_rsp_ptr =
@@ -1638,7 +1646,12 @@ static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
 
 	prepare_prdt_desc(&prd_table[table_length - i - 1], pccb, buf, datalen - 1);
 
+	if (hba->quirks & UFSHCD_QUIRK_PRDT_BYTE_GRAN) {
+		req_desc->prd_table_length = cpu_to_le16(
+			(u16)(table_length * sizeof(struct ufshcd_sg_entry)) + 16);
+	} else {
 		req_desc->prd_table_length = table_length;
+	}
 	ufshcd_cache_flush(prd_table, sizeof(*prd_table) * table_length);
 	ufshcd_cache_flush(req_desc, sizeof(*req_desc));
 }
