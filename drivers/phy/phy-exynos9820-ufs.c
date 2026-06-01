@@ -96,19 +96,6 @@ static const struct samsung_ufs_phy_cfg exynos9820_pre_pwr_hs[] = {
 	PHY_TRSV_REG_CFG_EXYNOS9820(0x106, 0x3C, PWR_MODE_HS_G3_ANY),
 	PHY_TRSV_REG_CFG_EXYNOS9820(0x13A, 0x03, PWR_MODE_HS_ANY),
 
-	/*
-	 * The following two should trigger a CDR lock.
-	 * See ufs30_cal_wait_cdr_lock() from the downstream kernel
-	 */
-	PHY_TRSV_REG_CFG_EXYNOS9820(0x118, 0x10, PWR_MODE_HS_ANY),
-	PHY_TRSV_REG_CFG_EXYNOS9820(0x118, 0x18, PWR_MODE_HS_ANY),
-
-	END_UFS_PHY_CFG,
-};
-
-static const struct samsung_ufs_phy_cfg exynos9820_post_pwr_hs[] = {
-	PHY_TRSV_REG_CFG_EXYNOS9820(0x13A, 0x01, PWR_MODE_HS_ANY),
-
 	END_UFS_PHY_CFG,
 };
 
@@ -116,7 +103,6 @@ static const struct samsung_ufs_phy_cfg *exynos9820_ufs_phy_cfgs[CFG_TAG_MAX] = 
 	[CFG_PRE_INIT]		= exynos9820_pre_init_cfg,
 	[CFG_POST_INIT]		= exynos9820_post_init_cfg,
 	[CFG_PRE_PWR_HS]	= exynos9820_pre_pwr_hs,
-	[CFG_POST_PWR_HS]	= exynos9820_post_pwr_hs,
 };
 
 static const char * const exynos9820_ufs_phy_clks[] = {
@@ -145,25 +131,49 @@ static int exynos9820_phy_wait_for_calibration(struct phy *phy, u8 lane)
 	return err;
 }
 
-#define EXYNOS9820_CDR_LOCK_TIMEOUT_US		40000
+#define EXYNOS9820_CDR_LOCK_DELAY_US		400
 #define EXYNOS9820_CDR_LOCK_MASK		0x8
 #define EXYNOS9820_CDR_LOCK_REG			0x1EE
+#define EXYNOS9820_CDR_LOCK_RETRY_COUNT		100
 
-static int exynos9820_phy_wait_for_cdr_lock(struct phy *phy, u8 lane)
+int exynos9820_phy_wait_for_cdr_lock(struct phy *phy, u8 lane)
 {
 	struct samsung_ufs_phy *ufs_phy = get_samsung_ufs_phy(phy);
-	u32 val;
-	int err;
+	u32 reg;
+	u32 i;
 
-	err = readl_poll_timeout(
-		ufs_phy->reg_pma +
-			PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CDR_LOCK_REG, lane),
-		val, (val & EXYNOS9820_CDR_LOCK_MASK),
-		EXYNOS9820_CDR_LOCK_TIMEOUT_US);
-	if (err)
-		dev_err(ufs_phy->dev, "failed to get cdr wait done %d\n", err);
+	struct samsung_ufs_phy_cfg cfg[4] = {
+		PHY_TRSV_REG_CFG_EXYNOS9820(0x118, 0x10, PWR_MODE_HS_ANY),
+		PHY_TRSV_REG_CFG_EXYNOS9820(0x118, 0x18, PWR_MODE_HS_ANY),
 
-	return err;
+		PHY_TRSV_REG_CFG_EXYNOS9820(0x13A, 0x01, PWR_MODE_HS_ANY),
+
+		END_UFS_PHY_CFG,
+	};
+
+	for (i = 0; i < EXYNOS9820_CDR_LOCK_RETRY_COUNT; i++) {
+		udelay(EXYNOS9820_CDR_LOCK_DELAY_US);
+
+		reg = readl(ufs_phy->reg_pma +
+			    PHY_TRSV_ADDR_EXYNOS9820(EXYNOS9820_CDR_LOCK_REG,
+						     lane));
+
+		if (reg & EXYNOS9820_CDR_LOCK_MASK) {
+			samsung_ufs_phy_config(ufs_phy, &cfg[2], lane);
+
+			return 0;
+		}
+
+		udelay(EXYNOS9820_CDR_LOCK_DELAY_US);
+
+		/* Disable and enable CDR */
+		samsung_ufs_phy_config(ufs_phy, &cfg[0], lane);
+		samsung_ufs_phy_config(ufs_phy, &cfg[1], lane);
+	}
+
+	dev_err(ufs_phy->dev, "failed to get phy cdr lock\n");
+
+	return -ETIMEDOUT;
 }
 
 const struct samsung_ufs_phy_drvdata exynos9820_ufs_phy = {
