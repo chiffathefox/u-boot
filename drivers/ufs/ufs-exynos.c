@@ -244,16 +244,6 @@ static void exynos_ufs_auto_ctrl_hcc(struct exynos_ufs *ufs, bool en)
 		hci_writel(ufs, misc & ~HCI_CORECLK_CTRL_EN, HCI_MISC);
 }
 
-static void exynos_ufs_ctrl_clk(struct exynos_ufs *ufs, bool en)
-{
-	u32 misc = hci_readl(ufs, HCI_MISC);
-	if (en) {
-		hci_writel(ufs, misc | CLK_CTRL_EN_MASK, HCI_MISC);
-	} else {
-		hci_writel(ufs, misc & ~CLK_CTRL_EN_MASK, HCI_MISC);
-	}
-}
-
 static void exynos_ufs_ctrl_clkstop(struct exynos_ufs *ufs, bool en)
 {
 	u32 ctrl = hci_readl(ufs, HCI_CLKSTOP_CTRL);
@@ -1258,37 +1248,6 @@ static void exynos9820_ufs_calib_hibern8_values(void *hba)
 	ufshcd_dme_set(hba, UIC_ARG_MIB(0x15A7), max_rx_hibern8_time_cap + 1);
 }
 
-static int exynos9820_ufs_post_link1(struct exynos_ufs *ufs)
-{
-	struct ufs_hba *hba = ufs->hba;
-
-	exynos9820_unipro_adapt_length(hba, 0x15D2);
-	exynos9820_unipro_adapt_length(hba, 0x15D3);
-
-	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x01);
-	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SAVECONFIGTIME), 0x3E8);
-	ufshcd_dme_set(hba, UIC_ARG_MIB(PA_DBG_MODE), 0x00);
-
-	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x80000000);
-	udelay(0x7d0);
-	generic_phy_configure(&ufs->phy, NULL);
-	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x0);
-
-	exynos9820_ufs_calib_hibern8_values(hba);
-
-	// TODO: remove
-	struct ufs_pa_layer_attr *p = &hba->pwr_info;
-	log_debug("%s: gear_rx = %u, gear_tx = %u, lane_rx = %u, lane_tx = %u, "
-		  "pwr_rx = %u, pwr_tx = %u, hs_rate = %u, avail_ln_rx = %d, "
-		  "avail_ln_tx = %d\n",
-		  __func__, p->gear_rx, p->gear_tx, p->lane_rx, p->lane_tx,
-		  p->pwr_rx, p->pwr_tx, p->hs_rate, ufs->avail_ln_rx,
-		  ufs->avail_ln_rx);
-	// exynos_ufs_show_uic_info(hba);
-
-	return 0;
-}
-
 #define HCI_UFS_ACG_DISABLE		0xFC
 #define HCI_UFS_ACG_DISABLE_EN		BIT(0)
 inline void exynos_ufs_set_hwacg_control(struct exynos_ufs *ufs, bool en)
@@ -1327,20 +1286,6 @@ int exynos9820_ufs_post_pwr_change(struct ufs_hba *hba)
 	struct exynos_ufs *ufs = dev_get_priv(hba->dev);
 
 	return generic_phy_configure(&ufs->phy, NULL);
-}
-
-static int
-exynos9820_ufs_get_max_pwr_mode1(struct ufs_hba *hba,
-				struct ufs_pwr_mode_info *max_pwr_info)
-{
-	dev_dbg(hba->dev,
-		"%s: max_pwr_info: valid=%d gear_rx=%u gear_tx=%u lane_rx=%u lane_tx=%u pwr_rx=%u pwr_tx=%u hs_rate=%u\n",
-		__func__, max_pwr_info->is_valid, max_pwr_info->info.gear_rx,
-		max_pwr_info->info.gear_tx, max_pwr_info->info.lane_rx,
-		max_pwr_info->info.lane_tx, max_pwr_info->info.pwr_rx,
-		max_pwr_info->info.pwr_tx, max_pwr_info->info.hs_rate);
-
-	return exynos9820_ufs_pre_pwr_change1(hba);
 }
 
 static int exynos9820_ufs_post_hce_enable(struct exynos_ufs *ufs)
@@ -1442,16 +1387,6 @@ static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
 
 	exynos9820_ufs_calib_hibern8_values(hba);
 
-	// TODO: remove
-	struct ufs_pa_layer_attr *p = &hba->pwr_info;
-	pr_err("%s: gear_rx = %u, gear_tx = %u, lane_rx = %u, lane_tx = %u, "
-		  "pwr_rx = %u, pwr_tx = %u, hs_rate = %u, avail_ln_rx = %d, "
-		  "avail_ln_tx = %d\n",
-		  __func__, p->gear_rx, p->gear_tx, p->lane_rx, p->lane_tx,
-		  p->pwr_rx, p->pwr_tx, p->hs_rate, ufs->avail_ln_rx,
-		  ufs->avail_ln_rx);
-	// exynos_ufs_show_uic_info(hba);
-
 	return 0;
 }
 
@@ -1499,14 +1434,6 @@ static int exynos_ufs_probe(struct udevice *dev)
 
 	return ret;
 }
-
-static struct ufs_hba_ops ufs_hba_exynos9820_ops = {
-	.init				= exynos_ufs_init,
-	.device_reset			= exynos_ufs_host_reset,
-	.hce_enable_notify		= exynos9820_ufs_hce_enable_notify1,
-	.link_startup_notify		= exynos9820_ufs_link_startup_notify1,
-	.get_max_pwr_mode		= exynos9820_ufs_get_max_pwr_mode1,
-};
 
 static struct exynos_ufs_uic_attr exynos9820_uic_attr = {
 	.tx_trailingclks		= 0x3f,
