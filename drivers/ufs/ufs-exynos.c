@@ -1385,7 +1385,7 @@ static int exynos9820_ufs_post_link(struct exynos_ufs *ufs)
 	udelay(0x7d0);
 	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x0);
 
-	exynos9820_ufs_calib_hibern8_values(hba);
+	// exynos9820_ufs_calib_hibern8_values(hba);
 
 	return 0;
 }
