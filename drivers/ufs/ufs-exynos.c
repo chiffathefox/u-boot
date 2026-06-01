@@ -1278,7 +1278,6 @@ static int exynos9820_ufs_drv_init(struct exynos_ufs *ufs)
 	exynos_ufs_disable_auto_ctrl_hcc(ufs);
 	exynos_ufs_ungate_clks(ufs);
 	exynos_ufs_set_hwacg_control(ufs, false);
-	exynos_ufs_phy_init(ufs);
 
 	return exynos_ufs_shareability(ufs);
 }
@@ -1443,7 +1442,7 @@ static int exynos9820_ufs_pre_link(struct ufs_hba *hba)
 	ufshcd_dme_set(hba, UIC_ARG_MIB(T_PEERDEVICEID), 0x1);
 	ufshcd_dme_set(hba, UIC_ARG_MIB(T_CONNECTIONSTATE), CPORT_CONNECTED);
 
-	ret = generic_phy_configure(&ufs->phy, NULL);
+	ret = exynos_ufs_phy_init(ufs);
 
 	return ret;
 }
