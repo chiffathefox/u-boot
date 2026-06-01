@@ -526,6 +526,9 @@ struct ufs_hba_ops {
 				 enum ufs_notify_change_status);
 	int (*link_startup_notify)(struct ufs_hba *hba,
 				   enum ufs_notify_change_status);
+	int (*pwr_change_notify)(struct ufs_hba *hba,
+				 enum ufs_notify_change_status status,
+				 struct ufs_pa_layer_attr *final_params);
 	int (*phy_initialization)(struct ufs_hba *hba);
 	int (*device_reset)(struct ufs_hba *hba);
 };
@@ -754,6 +757,17 @@ static inline int ufshcd_ops_link_startup_notify(struct ufs_hba *hba,
 		return hba->ops->link_startup_notify(hba, status);
 
 	return 0;
+}
+
+static inline int
+ufshcd_ops_pwr_change_notify(struct ufs_hba *hba,
+			     enum ufs_notify_change_status status,
+			     struct ufs_pa_layer_attr *dev_req_params)
+{
+	if (hba->ops && hba->ops->pwr_change_notify)
+		return hba->ops->pwr_change_notify(hba, status, dev_req_params);
+
+	return -ENOTSUPP;
 }
 
 static inline int ufshcd_vops_device_reset(struct ufs_hba *hba)

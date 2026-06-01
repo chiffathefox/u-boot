@@ -1981,8 +1981,8 @@ static int ufshcd_get_max_pwr_mode(struct ufs_hba *hba)
 	return ufshcd_ops_get_max_pwr_mode(hba, &hba->max_pwr_info);
 }
 
-static int ufshcd_change_power_mode(struct ufs_hba *hba,
-				    struct ufs_pa_layer_attr *pwr_mode)
+static int ufshcd_dme_change_power_mode(struct ufs_hba *hba,
+					struct ufs_pa_layer_attr *pwr_mode)
 {
 	int ret;
 
@@ -2039,6 +2039,21 @@ static int ufshcd_change_power_mode(struct ufs_hba *hba,
 
 	/* Copy new Power Mode to power info */
 	memcpy(&hba->pwr_info, pwr_mode, sizeof(struct ufs_pa_layer_attr));
+
+	return ret;
+}
+
+static int ufshcd_change_power_mode(struct ufs_hba *hba,
+				    struct ufs_pa_layer_attr *pwr_mode)
+{
+	int ret;
+
+	ufshcd_ops_pwr_change_notify(hba, PRE_CHANGE, pwr_mode);
+
+	ret = ufshcd_dme_change_power_mode(hba, pwr_mode);
+
+	if (!ret)
+		ufshcd_ops_pwr_change_notify(hba, POST_CHANGE, pwr_mode);
 
 	return ret;
 }
