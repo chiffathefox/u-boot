@@ -24,7 +24,7 @@
 #define for_each_phy_cfg(cfg) \
 	for (; (cfg)->id; (cfg)++)
 
-#define PHY_DEF_LANE_CNT	2
+#define PHY_DEF_LANE_CNT	1
 
 void samsung_ufs_phy_config(struct samsung_ufs_phy *phy,
 			    const struct samsung_ufs_phy_cfg *cfg,
@@ -180,7 +180,6 @@ static int samsung_ufs_phy_init(struct phy *phy)
 {
 	struct samsung_ufs_phy *ss_phy = get_samsung_ufs_phy(phy);
 
-	// ss_phy->lane_cnt = phy->attrs.bus_width;
 	ss_phy->ufs_phy_state = CFG_PRE_INIT;
 
 	return 0;
@@ -245,6 +244,18 @@ static int samsung_ufs_phy_set_mode(struct phy *generic_phy,
 	return 0;
 }
 
+static int samsung_ufs_phy_set_speed(struct phy *generic_phy, int speed)
+{
+	struct samsung_ufs_phy *ss_phy = get_samsung_ufs_phy(generic_phy);
+
+	if (speed <= 0)
+		return -EINVAL;
+
+	ss_phy->lane_cnt = speed;
+
+	return 0;
+}
+
 static int samsung_ufs_phy_exit(struct phy *phy)
 {
 	struct samsung_ufs_phy *ss_phy = get_samsung_ufs_phy(phy);
@@ -261,6 +272,7 @@ static const struct phy_ops samsung_ufs_phy_ops = {
 	.power_off	= samsung_ufs_phy_power_off,
 	.configure	= samsung_ufs_phy_configure,
 	.set_mode	= samsung_ufs_phy_set_mode,
+	.set_speed	= samsung_ufs_phy_set_speed,
 };
 
 static int samsung_ufs_phy_probe(struct udevice *dev)

@@ -602,9 +602,6 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 	struct udevice *dev = hba->dev;
 	int ret = 0;
 
-	// TODO:
-	// phy_set_bus_width(generic_phy, ufs->avail_ln_rx);
-
 	ret = generic_phy_get_by_name(dev, "ufs-phy", &ufs->phy);
 	if (ret) {
 		dev_err(dev, "failed to get ufs-phy, ret = %d\n", ret);
@@ -614,6 +611,13 @@ static int exynos_ufs_phy_init(struct exynos_ufs *ufs)
 	ret = generic_phy_init(&ufs->phy);
 	if (ret) {
 		dev_err(dev, "%s: phy init failed, ret = %d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	ret = generic_phy_set_speed(&ufs->phy, ufs->avail_ln_rx);
+	if (ret) {
+		dev_err(dev, "%s: phy set lane count failed, ret = %d\n",
 			__func__, ret);
 		return ret;
 	}
