@@ -735,6 +735,21 @@ static int exynos_ufs_pre_link(struct ufs_hba *hba)
 	return 0;
 }
 
+static void exynos_ufs_fit_aggr_timeout(struct exynos_ufs *ufs)
+{
+	u32 val;
+
+	/* Select function clock (mclk) for timer tick */
+	if (ufs->opts & EXYNOS_UFS_OPT_TIMER_TICK_SELECT) {
+		val = hci_readl(ufs, HCI_V2P1_CTRL);
+		val |= IA_TICK_SEL;
+		hci_writel(ufs, val, HCI_V2P1_CTRL);
+	}
+
+	val = exynos_ufs_calc_time_cntr(ufs, IATOVAL_NSEC / CNTR_DIV_VAL);
+	hci_writel(ufs, val & CNT_VAL_1US_MASK, HCI_1US_TO_CNT_VAL);
+}
+
 static int exynos_ufs_post_link(struct ufs_hba *hba)
 {
 	struct udevice *dev = hba->dev;
@@ -746,7 +761,7 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 	((hba->capabilities & MASK_TASK_MANAGEMENT_REQUEST_SLOTS) >> 16) + 1;
 
 	exynos_ufs_establish_connt(ufs);
-	// exynos_ufs_fit_aggr_timeout(ufs);
+	exynos_ufs_fit_aggr_timeout(ufs);
 
 	hci_writel(ufs, 0xa, HCI_DATA_REORDER);
 
@@ -800,12 +815,10 @@ static int exynos_ufs_post_link(struct ufs_hba *hba)
 		}
 	}
 
+	generic_phy_configure(&ufs->phy, NULL);
 
-	// TODO: questionably? wrong order?
 	if (ufs->drv_data->post_link)
 		ufs->drv_data->post_link(ufs);
-	generic_phy_configure(&ufs->phy, NULL); // TODO: should be calibrate
-	ufshcd_dme_set(hba, UIC_ARG_MIB(0xA006), 0x0);
 
 	return 0;
 }
@@ -1292,22 +1305,6 @@ static int exynos9820_ufs_drv_init(struct exynos_ufs *ufs)
 	exynos_ufs_set_hwacg_control(ufs, false);
 
 	return exynos_ufs_shareability(ufs);
-}
-
-static void exynos_ufs_fit_aggr_timeout(struct exynos_ufs *ufs)
-{
-	u32 val;
-
-	/* Select function clock (mclk) for timer tick */
-	if (ufs->opts & EXYNOS_UFS_OPT_TIMER_TICK_SELECT) {
-		val = hci_readl(ufs, HCI_V2P1_CTRL);
-		val |= IA_TICK_SEL;
-		hci_writel(ufs, val, HCI_V2P1_CTRL);
-	}
-
-	val = exynos_ufs_calc_time_cntr(ufs, IATOVAL_NSEC / CNTR_DIV_VAL);
-	// XXX: TODO: wtf
-	hci_writel(ufs, 0x000000a6, HCI_1US_TO_CNT_VAL);
 }
 
 static void exynos9820_ufs_ctrl_cport_log(struct exynos_ufs *ufs)
