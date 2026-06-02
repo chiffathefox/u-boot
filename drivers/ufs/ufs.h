@@ -537,6 +537,7 @@ struct ufs_hba_ops {
 	int (*pwr_change_notify)(struct ufs_hba *hba,
 				 enum ufs_notify_change_status status,
 				 struct ufs_pa_layer_attr *final_params);
+	void (*setup_xfer_req)(struct ufs_hba *hba, int tag, bool is_scsi_cmd);
 	int (*phy_initialization)(struct ufs_hba *hba);
 	int (*device_reset)(struct ufs_hba *hba);
 };

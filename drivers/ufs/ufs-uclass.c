@@ -1030,6 +1030,9 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba, enum dev_cmd_type cmd_type,
 	if (err)
 		return err;
 
+	if (hba->ops && hba->ops->setup_xfer_req)
+		hba->ops->setup_xfer_req(hba, TASK_TAG, false);
+
 	err = ufshcd_send_command(hba, TASK_TAG);
 	if (err)
 		return err;
@@ -1668,6 +1671,9 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 	prepare_prdt_table(hba, pccb);
 
 	ufshcd_cache_flush(pccb->pdata, pccb->datalen);
+
+	if (hba->ops && hba->ops->setup_xfer_req)
+		hba->ops->setup_xfer_req(hba, TASK_TAG, true);
 
 	ufshcd_send_command(hba, TASK_TAG);
 
