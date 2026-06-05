@@ -20,6 +20,15 @@
 		#size-cells = <1>;
 		ranges;
 		stdout-path = &serial0;
+
+		framebuffer0: framebuffer@ca000000 {
+			compatible = "simple-framebuffer";
+			reg = <0x0 0xca000000 (1440 * 3040 * 4)>;
+			width = <1440>;
+			height = <3040>;
+			stride = <(1440 * 4)>;
+			format = "a8r8g8b8";
+		};
 	};
 
 	memory@80000000 {
@@ -27,6 +36,17 @@
 		reg = <0x0 0x80000000 0x80000000>,
 		      <0x00000008 0x80000000 0x80000000>,
 		      <0x00000009 0x00000000 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+
+		framebuffer_region@ca000000 {
+			reg = <0x0 0xca000000 (1440 * 3040 * 4)>;
+			no-map;
+		};
 	};
 };
 
