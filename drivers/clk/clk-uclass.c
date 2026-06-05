@@ -430,7 +430,6 @@ clk_resolve_parent_clk(struct udevice *dev, const char *name)
 {
 	struct udevice *parent;
 	struct clk clk;
-	struct clk *c;
 	int ret;
 
 	ret = uclass_get_device_by_name(UCLASS_CLK, name, &parent);
@@ -441,12 +440,7 @@ clk_resolve_parent_clk(struct udevice *dev, const char *name)
 	if (!clk.dev)
 		return name;
 
-	ret = clk_get_by_id(clk.id, &c);
-	if (ret) {
-		return name;
-	}
-
-	return c->dev->name;
+	return clk.dev->name;
 }
 
 int clk_release_all(struct clk *clk, unsigned int count)
