@@ -48,6 +48,11 @@
 			no-map;
 		};
 	};
+
+	reg_dummy: regulator-0 {
+		compatible = "regulator-fixed";
+		regulator-name = "dummy_reg";
+	};
 };
 
 &oscclk {
@@ -56,6 +61,16 @@
 
 &serial0 {
 	status = "okay";
+};
+
+&usbdrd_phy {
+	status = "okay";
+};
+
+&usbdrd {
+	status = "okay";
+	vdd10-supply = <&reg_dummy>;
+	vdd33-supply = <&reg_dummy>;
 };
 
 &ufs {

@@ -189,6 +189,19 @@
 				 <&cmu_top CLK_DOUT_CMU_PERIC0_IP>;
 		};
 
+		cmu_fsys0a: clock-controller@10a00000 {
+			compatible = "samsung,exynos9820-cmu-fsys0a";
+			reg = <0x10a00000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "usb31drd",
+				      "usbdp_debug";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_FSYS0A_BUS>,
+				 <&cmu_top CLK_DOUT_CMU_FSYS0A_USBDP_DEBUG>;
+		};
+
 		serial0: serial@10440000 {
 			compatible = "samsung,exynos7870-uart",
 				     "samsung,exynos8895-uart";
@@ -208,6 +221,44 @@
 			samsung,uart-fifosize = <256>;
 
 			status = "disabled";
+		};
+
+		usbdrd_phy: phy@10b00000 {
+			compatible = "samsung,exynos990-usbdrd-phy";
+			reg = <0x10b00000 0x200>;
+			#phy-cells = <1>;
+
+			clock-names = "phy",
+				      "ref";
+			clocks = <&cmu_fsys0a CLK_GOUT_FSYS0A_USB31DRD_ACLK_PHYCTRL>,
+				 <&oscclk>;
+
+			samsung,pmu-syscon = <&pmu_system_controller>;
+
+			status = "disabled";
+		};
+
+		usbdrd: usb@10c00000 {
+			compatible = "samsung,exynos850-dwusb3";
+			ranges = <0x0 0x10c00000 0x10000>;
+
+			clock-names = "bus_early",
+				      "ref";
+			clocks = <&cmu_fsys0a CLK_GOUT_FSYS0A_USB31DRD_BUS_CLK_EARLY>,
+				 <&cmu_fsys0a CLK_GOUT_FSYS0A_USB31DRD_I_USB31DRD_REF_CLK_40>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			status = "disabled";
+
+			usbdrd_dwc3: usb@0 {
+				compatible = "snps,dwc3";
+				reg = <0x0 0x10000>;
+				interrupts = <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
+				phys = <&usbdrd_phy 0>;
+				phy-names = "usb2-phy";
+			};
 		};
 
 		sysreg_fsys1: syscon@13c10000 {
