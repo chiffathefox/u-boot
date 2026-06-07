@@ -373,14 +373,32 @@
 		};
 
 		pmu_system_controller: system-controller@15860000 {
-			compatible = "samsung,exynos9820-pmu", "syscon";
+			compatible = "samsung,exynos7-pmu", "syscon";
 			reg = <0x15860000 0x10000>;
+
+			poweroff: syscon-poweroff {
+				compatible = "syscon-poweroff";
+				regmap = <&pmu_system_controller>;
+				offset = <0x030c>; /* PS_HOLD_CONTROL */
+				mask = <0x100>;
+				value = <0x0>; /* De-assert PS_HOLD_EN */
+			};
 
 			reboot: syscon-reboot {
 				compatible = "syscon-reboot";
 				regmap = <&pmu_system_controller>;
-				offset = <0x3A00>; /* SWRESET */
+				offset = <0x3a00>; /* SWRESET */
 				mask = <0x2>;
+			};
+
+			reboot-mode {
+				compatible = "syscon-reboot-mode";
+				offset = <0x080c>; /* SEC_DEBUG_PANIC_INFORM */
+
+				mode-download = <0x12345671>;
+				mode-charging = <0x12345673>;
+				mode-recovery = <0x12345674>;
+				mode-bootloader = <0x1234567d>;
 			};
 		};
 
@@ -431,4 +449,3 @@
 };
 
 #include "exynos9820-pinctrl.dtsi"
-//#include "arm/samsung/exynos-syscon-restart.dtsi"
