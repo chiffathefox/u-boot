@@ -553,6 +553,13 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 	};
+
+	hsi2c10_bus: hsi2c10-bus-pins {
+		samsung,pins = "gpp1-4", "gpp1-5";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_2>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS7_PIN_DRV_LV1>;
+	};
 };
 
 &pinctrl_peric1 {

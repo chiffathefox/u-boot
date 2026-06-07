@@ -9,6 +9,7 @@
 #include "exynos9820.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/soc/samsung,exynos-usi.h>
 
 / {
 	model = "Samsung Galaxy S10 (SM-G973F)";
@@ -81,9 +82,29 @@
 		};
 	};
 
+	/* TODO: Implement PMIC */
 	reg_dummy: regulator-0 {
 		compatible = "regulator-fixed";
 		regulator-name = "dummy_reg";
+	};
+};
+
+&hsi2c10 {
+	clock-frequency = <400000>;
+	status = "okay";
+
+	touchscreen@48 {
+		compatible = "samsung,s6sy761";
+		reg = <0x48>;
+
+		avdd-supply = <&reg_dummy>;
+		vdd-supply = <&reg_dummy>;
+
+		interrupt-parent = <&gpa1>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+
+		pinctrl-0 = <&ts_int>;
+		pinctrl-names = "default";
 	};
 };
 
@@ -119,6 +140,13 @@
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 		samsung,pin-drv = <EXYNOS5433_PIN_DRV_FAST_SR1>;
 	};
+
+	ts_int: ts-int-pins {
+		samsung,pins = "gpa1-0";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_EINT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS7_PIN_DRV_LV1>;
+	};
 };
 
 &serial0 {
@@ -133,6 +161,11 @@
 	status = "okay";
 	vdd10-supply = <&reg_dummy>;
 	vdd33-supply = <&reg_dummy>;
+};
+
+&usi3 {
+	status = "okay";
+	samsung,mode = <USI_MODE_I2C>;
 };
 
 &ufs {

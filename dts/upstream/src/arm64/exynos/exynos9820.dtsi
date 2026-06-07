@@ -197,17 +197,10 @@
 				 <&cmu_top CLK_DOUT_CMU_PERIC0_IP>;
 		};
 
-		cmu_fsys0a: clock-controller@10a00000 {
-			compatible = "samsung,exynos9820-cmu-fsys0a";
-			reg = <0x10a00000 0x8000>;
-			#clock-cells = <1>;
-
-			clock-names = "oscclk",
-				      "usb31drd",
-				      "usbdp_debug";
-			clocks = <&oscclk>,
-				 <&cmu_top CLK_DOUT_CMU_FSYS0A_BUS>,
-				 <&cmu_top CLK_DOUT_CMU_FSYS0A_USBDP_DEBUG>;
+		sysreg_peric0: syscon@10420000 {
+			compatible = "samsung,exynos9820-peric0-sysreg", "syscon";
+			reg = <0x10420000 0x2000>;
+			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_SYSREG_PERIC0_PCLK>;
 		};
 
 		pinctrl_peric0: pinctrl@10430000 {
@@ -237,10 +230,59 @@
 			status = "disabled";
 		};
 
+		usi3: usi@104b00c0 {
+			compatible = "samsung,exynos850-usi";
+			reg = <0x104b00c0 0x20>;
+			ranges;
+
+			clock-names = "pclk",
+				      "ipclk";
+			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_USI03_USI_PCLK>,
+				 <&cmu_peric0 CLK_GOUT_PERIC0_USI03_USI_IPCLK>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			samsung,sysreg = <&sysreg_peric0 0x101C>;
+			status = "disabled";
+
+			hsi2c10: i2c@104b0000 {
+				compatible = "samsung,exynosautov9-hsi2c";
+				reg = <0x104b0000 0xc0>;
+
+				clock-names = "hsi2c",
+					      "hsi2c_pclk";
+				clocks = <&cmu_peric0 CLK_GOUT_PERIC0_USI03_USI_IPCLK>,
+					 <&cmu_peric0 CLK_GOUT_PERIC0_USI03_USI_PCLK>;
+
+				interrupts = <GIC_SPI 388 IRQ_TYPE_LEVEL_HIGH>;
+				pinctrl-0 = <&hsi2c10_bus>;
+				pinctrl-names = "default";
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				status = "disabled";
+			};
+		};
+
 		pinctrl_peric1: pinctrl@10830000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x10830000 0x1000>;
 			interrupts = <GIC_SPI 407 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		cmu_fsys0a: clock-controller@10a00000 {
+			compatible = "samsung,exynos9820-cmu-fsys0a";
+			reg = <0x10a00000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "usb31drd",
+				      "usbdp_debug";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_FSYS0A_BUS>,
+				 <&cmu_top CLK_DOUT_CMU_FSYS0A_USBDP_DEBUG>;
 		};
 
 		usbdrd_phy: phy@10b00000 {
@@ -290,6 +332,7 @@
 		sysreg_fsys1: syscon@13c10000 {
 			compatible = "samsung,exynos9820-fsys1-sysreg", "syscon";
 			reg = <0x13c10000 0x1200>;
+			clocks = <&cmu_fsys1 CLK_GOUT_FSYS1_SYSREG_FSYS1_PCLK>;
 		};
 
 		pinctrl_fsys1: pinctrl@13c40000 {
