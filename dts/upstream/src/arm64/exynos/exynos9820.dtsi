@@ -213,6 +213,7 @@
 		pinctrl_peric0: pinctrl@10430000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x10430000 0x1000>;
+			interrupts = <GIC_SPI 380 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		serial0: serial@10440000 {
@@ -239,6 +240,7 @@
 		pinctrl_peric1: pinctrl@10830000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x10830000 0x1000>;
+			interrupts = <GIC_SPI 407 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		usbdrd_phy: phy@10b00000 {
@@ -282,6 +284,7 @@
 		pinctrl_fsys0: pinctrl@13030000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x13030000 0x1000>;
+			interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		sysreg_fsys1: syscon@13c10000 {
@@ -292,6 +295,7 @@
 		pinctrl_fsys1: pinctrl@13c40000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x13c40000 0x1000>;
+			interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		ufs: ufs@13d60000 {
