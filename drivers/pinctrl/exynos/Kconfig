@@ -24,3 +24,11 @@ config PINCTRL_EXYNOS850
 	help
 	  Support pin multiplexing and pin configuration control on
 	  Samsung's Exynos850 SoC.
+
+config PINCTRL_EXYNOS9820
+	bool "Samsung Exynos9820 pinctrl driver"
+	depends on ARCH_EXYNOS && PINCTRL_FULL
+	select PINCTRL_EXYNOS
+	help
+	  Support pin multiplexing and pin configuration control on
+	  Samsung's Exynos850 SoC.
