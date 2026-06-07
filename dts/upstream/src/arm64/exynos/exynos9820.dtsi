@@ -17,6 +17,14 @@
 	interrupt-parent = <&gic>;
 
 	aliases {
+		pinctrl0 = &pinctrl_alive;
+		pinctrl1 = &pinctrl_aud;
+		pinctrl2 = &pinctrl_cmgp;
+		pinctrl3 = &pinctrl_fsys0;
+		pinctrl4 = &pinctrl_fsys1;
+		pinctrl5 = &pinctrl_peric0;
+		pinctrl6 = &pinctrl_peric1;
+		pinctrl7 = &pinctrl_vts;
 	};
 
 	cpus {
@@ -202,6 +210,11 @@
 				 <&cmu_top CLK_DOUT_CMU_FSYS0A_USBDP_DEBUG>;
 		};
 
+		pinctrl_peric0: pinctrl@10430000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x10430000 0x1000>;
+		};
+
 		serial0: serial@10440000 {
 			compatible = "samsung,exynos7870-uart",
 				     "samsung,exynos8895-uart";
@@ -221,6 +234,11 @@
 			samsung,uart-fifosize = <256>;
 
 			status = "disabled";
+		};
+
+		pinctrl_peric1: pinctrl@10830000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x10830000 0x1000>;
 		};
 
 		usbdrd_phy: phy@10b00000 {
@@ -261,9 +279,19 @@
 			};
 		};
 
+		pinctrl_fsys0: pinctrl@13030000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x13030000 0x1000>;
+		};
+
 		sysreg_fsys1: syscon@13c10000 {
 			compatible = "samsung,exynos9820-fsys1-sysreg", "syscon";
 			reg = <0x13c10000 0x1200>;
+		};
+
+		pinctrl_fsys1: pinctrl@13c40000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x13c40000 0x1000>;
 		};
 
 		ufs: ufs@13d60000 {
@@ -326,6 +354,20 @@
 				 <&cmu_top CLK_GOUT_CMU_FSYS1_UFS_EMBD>;
 		};
 
+		pinctrl_vts: pinctrl@15580000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x15580000 0x1000>;
+		};
+
+		pinctrl_alive: pinctrl@15850000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x15850000 0x1000>;
+
+			wakeup-interrupt-controller {
+				compatible = "samsung,exynos7-wakeup-eint";
+			};
+		};
+
 		pmu_system_controller: system-controller@15860000 {
 			compatible = "samsung,exynos9820-pmu", "syscon";
 			reg = <0x15860000 0x10000>;
@@ -336,6 +378,20 @@
 				offset = <0x3A00>; /* SWRESET */
 				mask = <0x2>;
 			};
+		};
+
+		pinctrl_cmgp: pinctrl@15c30000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x15c30000 0x1000>;
+
+			wakeup-interrupt-controller {
+				compatible = "samsung,exynos7-wakeup-eint";
+			};
+		};
+
+		pinctrl_aud: pinctrl@18c60000 {
+			compatible = "samsung,exynos9820-pinctrl";
+			reg = <0x18c60000 0x1000>;
 		};
 
 		cmu_top: clock-controller@1a240000 {
