@@ -123,6 +123,15 @@
 		};
 	};
 
+	firmware {
+		acpm_ipc: power-management {
+			compatible = "samsung,exynos9820-acpm-ipc";
+			#clock-cells = <1>;
+			mboxes = <&ap2apm_mailbox>;
+			shmem = <&apm_sram>;
+		};
+	};
+
 	oscclk: osc-clock {
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
@@ -406,6 +415,17 @@
 			reg = <0x15580000 0x1000>;
 		};
 
+		cmu_apm: clock-controller@15800000 {
+			compatible = "samsung,exynos9820-cmu-apm";
+			reg = <0x15800000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_APM_BUS>;
+		};
+
 		pinctrl_alive: pinctrl@15850000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x15850000 0x1000>;
@@ -445,6 +465,15 @@
 			};
 		};
 
+		ap2apm_mailbox: mailbox@15900000 {
+			compatible = "google,gs101-mbox";
+			reg = <0x15900000 0x1000>;
+			clocks = <&cmu_apm CLK_GOUT_APM_MAILBOX_APM_AP_PCLK>;
+			clock-names = "pclk";
+			interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+			#mbox-cells = <0>;
+		};
+
 		pinctrl_cmgp: pinctrl@15c30000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x15c30000 0x1000>;
@@ -472,6 +501,14 @@
 		/* TODO: pinctrl */
 		/* TODO: pmu_system_controller */
 		/* TODO: DMA */
+	};
+
+	apm_sram: sram@2039000 {
+		compatible = "mmio-sram";
+		reg = <0x0 0x2039000 0x30000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x0 0x2039000 0x30000>;
 	};
 
 	timer {

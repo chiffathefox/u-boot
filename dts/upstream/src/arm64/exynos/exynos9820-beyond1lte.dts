@@ -89,6 +89,30 @@
 	};
 };
 
+&acpm_ipc {
+	pmic-1 {
+		compatible = "samsung,s2mps19-pmic";
+		interrupts-extended = <&gpa0 1 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source;
+
+		regulators {
+			ldo19m: ldo19m {
+				regulator-name = "tsp_io";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-boot-on;
+			};
+
+			ldo27m: ldo27m {
+				regulator-name = "tsp_avdd";
+				regulator-min-microvolt = <3000000>;
+				regulator-max-microvolt = <3000000>;
+				regulator-boot-on;
+			};
+		};
+	};
+};
+
 &hsi2c10 {
 	clock-frequency = <400000>;
 	status = "okay";
@@ -97,11 +121,10 @@
 		compatible = "samsung,s6sy761";
 		reg = <0x48>;
 
-		avdd-supply = <&reg_dummy>;
-		vdd-supply = <&reg_dummy>;
+		avdd-supply = <&ldo27m>;
+		vdd-supply = <&ldo19m>;
 
-		interrupt-parent = <&gpa1>;
-		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+		interrupts-extended = <&gpa1 0 IRQ_TYPE_LEVEL_LOW>;
 
 		pinctrl-0 = <&ts_int>;
 		pinctrl-names = "default";
