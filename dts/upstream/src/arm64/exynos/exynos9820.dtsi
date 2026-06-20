@@ -138,20 +138,6 @@
 		clock-output-names = "oscclk";
 	};
 
-#if 0
-	uart0_pclk: uart0-pclk {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-output-names = "uart0-pclk";
-	};
-
-	uart0_uclk: uart0-uclk {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-output-names = "uart0-uclk";
-	};
-#endif
-
 	/* TODO: A55 PMU */
 	/* TODO: A75 PMU */
 	/* TODO: Mongoose M4 PMU */
