@@ -10,6 +10,7 @@
 #include <bootflow.h>
 #include <ctype.h>
 #include <dm/ofnode.h>
+#include <efi_loader.h>
 #include <env.h>
 #include <errno.h>
 #include <init.h>
@@ -59,7 +60,7 @@ static const u64 exynos7870_common_dram_bank_bases[CONFIG_NR_DRAM_BANKS] = {
 };
 
 static const u64 exynos9820_common_dram_bank_bases[CONFIG_NR_DRAM_BANKS] = {
-	0x80000000, 0x880000000, 0x900000000,
+	0x80000000,  0xc0000000, 0xe1900000, 0x880000000, 0x900000000, 0x980000000
 };
 
 static const char *exynos_prev_bl_get_bootargs(void)
@@ -354,7 +355,7 @@ int board_early_init_f(void)
 	 * For variants with more memory, the previous bootloader should
 	 * overlay the devicetree with the required extra memory ranges.
 	 */
-	// exynos_parse_dram_banks(board_info, (const void *)get_prev_bl_fdt_addr());
+	exynos_parse_dram_banks(board_info, (const void *)get_prev_bl_fdt_addr());
 
 	return 0;
 }
@@ -363,8 +364,8 @@ int dram_init(void)
 {
 	unsigned int i;
 
-	/* Select the largest RAM bank for U-Boot. */
-	for (i = 0; i < CONFIG_NR_DRAM_BANKS; i++) {
+	/* Select the lowest RAM bank for U-Boot. */
+	for (i = 0; i < 1; i++) {
 		if (gd->ram_size < mem_map[i + 1].size) {
 			gd->ram_base = mem_map[i + 1].phys;
 			gd->ram_size = mem_map[i + 1].size;
@@ -384,6 +385,17 @@ int dram_init_banksize(void)
 	}
 
 	return 0;
+}
+
+void efi_add_known_memory(void)
+{
+	unsigned int i;
+
+	/* Make sure kernel is placed in the lowest memory bank */
+	for (i = 3; i < CONFIG_NR_DRAM_BANKS; i++) {
+		efi_add_memory_map(mem_map[i + 1].phys, mem_map[i + 1].size,
+				   EFI_BOOT_SERVICES_DATA);
+	}
 }
 
 int board_init(void)
