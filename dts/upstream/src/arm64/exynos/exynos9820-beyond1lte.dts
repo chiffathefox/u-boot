@@ -64,20 +64,63 @@
 		};
 	};
 
-	memory@80000000 {
-		device_type = "memory";
-		reg = <0x0 0x80000000 0x80000000>,
-		      <0x00000008 0x80000000 0x80000000>,
-		      <0x00000009 0x00000000 0x80000000>;
-	};
-
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <1>;
 		ranges;
 
+		sec_debug_magic@80000000 {
+			reg = <0x0 0x80000000 0x1000>;
+			no-map;
+		};
+
+		kaslr_seed@80001000 {
+			reg = <0x0 0x80001000 0x1000>;
+			no-map;
+		};
+
+		el2_code@87000000 {
+			reg = <0x0 0x87000000 0x200000>;
+			no-map;
+		};
+
+		mm_debug@91200000 {
+			reg = <0x0 0x91200000 0x1000>;
+			no-map;
+		};
+
+		secure_camera@96000000 {
+			reg = <0x0 0x96000000 0x2200000>;
+			no-map;
+		};
+
+		seclog_mem@c0000000 {
+			reg = <0x0 0xc0000000 0x80000>;
+			no-map;
+		};
+
 		framebuffer_region@ca000000 {
 			reg = <0x0 0xca000000 (1440 * 3040 * 4)>;
+			no-map;
+		};
+
+		modem_spare@d0000000 {
+			reg = <0x0 0xd0000000 0x1600000>;
+			no-map;
+		};
+
+		modem_if@f0000000 {
+			reg = <0x0 0xf0000000 0xb900000>;
+			no-map;
+		};
+
+		cp_ram_logging@fb900000 {
+			reg = <0x0 0xfb900000 0x2000000>;
+			no-map;
+		};
+
+		el2_earlymem@9fd800000 {
+			reg = <0x9 0xfd800000 0x2800000>;
 			no-map;
 		};
 	};
