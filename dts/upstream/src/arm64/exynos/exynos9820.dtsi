@@ -71,6 +71,11 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x0>;
 			enable-method = "psci";
+#if 0
+			cpu-idle-states = <&ananke_cpu_sleep>;
+#endif
+			capacity-dmips-mhz = <272>;
+			dynamic-power-coefficient = <160>;
 		};
 
 		cpu1: cpu@1 {
@@ -78,6 +83,9 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x1>;
 			enable-method = "psci";
+			cpu-idle-states = <&ananke_cpu_sleep>;
+			capacity-dmips-mhz = <272>;
+			dynamic-power-coefficient = <160>;
 		};
 
 		cpu2: cpu@2 {
@@ -85,6 +93,9 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x2>;
 			enable-method = "psci";
+			cpu-idle-states = <&ananke_cpu_sleep>;
+			capacity-dmips-mhz = <272>;
+			dynamic-power-coefficient = <160>;
 		};
 
 		cpu3: cpu@3 {
@@ -92,6 +103,9 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x3>;
 			enable-method = "psci";
+			cpu-idle-states = <&ananke_cpu_sleep>;
+			capacity-dmips-mhz = <272>;
+			dynamic-power-coefficient = <160>;
 		};
 
 		cpu4: cpu@4 {
@@ -99,6 +113,9 @@
 			compatible = "arm,cortex-a75";
 			reg = <0x4>;
 			enable-method = "psci";
+			cpu-idle-states = <&prometheus_cpu_sleep>;
+			capacity-dmips-mhz = <531>;
+			dynamic-power-coefficient = <320>;
 		};
 
 		cpu5: cpu@5 {
@@ -106,6 +123,9 @@
 			compatible = "arm,cortex-a75";
 			reg = <0x5>;
 			enable-method = "psci";
+			cpu-idle-states = <&prometheus_cpu_sleep>;
+			capacity-dmips-mhz = <531>;
+			dynamic-power-coefficient = <320>;
 		};
 
 		cpu6: cpu@100 {
@@ -113,6 +133,9 @@
 			compatible = "samsung,mongoose-m4";
 			reg = <0x100>;
 			enable-method = "psci";
+			cpu-idle-states = <&cheetah_cpu_sleep>;
+			capacity-dmips-mhz = <785>;
+			dynamic-power-coefficient = <760>;
 		};
 
 		cpu7: cpu@101 {
@@ -120,6 +143,43 @@
 			compatible = "samsung,mongoose-m4";
 			reg = <0x101>;
 			enable-method = "psci";
+			cpu-idle-states = <&cheetah_cpu_sleep>;
+			capacity-dmips-mhz = <785>;
+			dynamic-power-coefficient = <760>;
+		};
+
+		idle-states {
+			entry-method = "psci";
+
+			ananke_cpu_sleep: cpu-ananke-sleep {
+				idle-state-name = "c2";
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				local-timer-stop;
+				entry-latency-us = <70>;
+				exit-latency-us = <160>;
+				min-residency-us = <2000>;
+			};
+
+			prometheus_cpu_sleep: cpu-prometheus-sleep {
+				idle-state-name = "c2";
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				local-timer-stop;
+				entry-latency-us = <150>;
+				exit-latency-us = <190>;
+				min-residency-us = <2500>;
+			};
+
+			cheetah_cpu_sleep: cpu-cheetah-sleep {
+				idle-state-name = "c2";
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				local-timer-stop;
+				entry-latency-us = <235>;
+				exit-latency-us = <220>;
+				min-residency-us = <3500>;
+			};
 		};
 	};
 
@@ -160,6 +220,37 @@
 			reg = <0x10000000 0x100>;
 		};
 #endif
+		cmu_peris: clock-controller@10020000 {
+			compatible = "samsung,exynos9820-cmu-peris";
+			reg = <0x10020000 0x8000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_PERIS_BUS>;
+		};
+
+		timer@10040000 {
+			compatible = "samsung,exynos4210-mct";
+			reg = <0x10040000 0x800>;
+			clocks = <&oscclk>,
+				 <&cmu_peris CLK_GOUT_PERIS_MCT_PCLK>;
+			clock-names = "fin_pll",
+				      "mct";
+			interrupts = <GIC_SPI 466 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 467 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 468 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 469 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 470 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 471 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 472 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 473 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 474 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 475 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 476 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 477 IRQ_TYPE_LEVEL_HIGH>;
+		};
 
 		gic: interrupt-controller@10100000 {
 			compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
