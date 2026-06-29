@@ -71,9 +71,6 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x0>;
 			enable-method = "psci";
-#if 0
-			cpu-idle-states = <&ananke_cpu_sleep>;
-#endif
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
 		};
@@ -83,7 +80,6 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x1>;
 			enable-method = "psci";
-			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
 		};
@@ -93,7 +89,6 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x2>;
 			enable-method = "psci";
-			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
 		};
@@ -103,7 +98,6 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x3>;
 			enable-method = "psci";
-			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
 		};
@@ -113,7 +107,6 @@
 			compatible = "arm,cortex-a75";
 			reg = <0x4>;
 			enable-method = "psci";
-			cpu-idle-states = <&prometheus_cpu_sleep>;
 			capacity-dmips-mhz = <531>;
 			dynamic-power-coefficient = <320>;
 		};
@@ -123,7 +116,6 @@
 			compatible = "arm,cortex-a75";
 			reg = <0x5>;
 			enable-method = "psci";
-			cpu-idle-states = <&prometheus_cpu_sleep>;
 			capacity-dmips-mhz = <531>;
 			dynamic-power-coefficient = <320>;
 		};
@@ -133,7 +125,6 @@
 			compatible = "samsung,mongoose-m4";
 			reg = <0x100>;
 			enable-method = "psci";
-			cpu-idle-states = <&cheetah_cpu_sleep>;
 			capacity-dmips-mhz = <785>;
 			dynamic-power-coefficient = <760>;
 		};
@@ -143,43 +134,8 @@
 			compatible = "samsung,mongoose-m4";
 			reg = <0x101>;
 			enable-method = "psci";
-			cpu-idle-states = <&cheetah_cpu_sleep>;
 			capacity-dmips-mhz = <785>;
 			dynamic-power-coefficient = <760>;
-		};
-
-		idle-states {
-			entry-method = "psci";
-
-			ananke_cpu_sleep: cpu-ananke-sleep {
-				idle-state-name = "c2";
-				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x0010000>;
-				local-timer-stop;
-				entry-latency-us = <70>;
-				exit-latency-us = <160>;
-				min-residency-us = <2000>;
-			};
-
-			prometheus_cpu_sleep: cpu-prometheus-sleep {
-				idle-state-name = "c2";
-				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x0010000>;
-				local-timer-stop;
-				entry-latency-us = <150>;
-				exit-latency-us = <190>;
-				min-residency-us = <2500>;
-			};
-
-			cheetah_cpu_sleep: cpu-cheetah-sleep {
-				idle-state-name = "c2";
-				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x0010000>;
-				local-timer-stop;
-				entry-latency-us = <235>;
-				exit-latency-us = <220>;
-				min-residency-us = <3500>;
-			};
 		};
 	};
 
