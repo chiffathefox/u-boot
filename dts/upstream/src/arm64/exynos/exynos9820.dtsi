@@ -169,6 +169,13 @@
 		#size-cells = <1>;
 		ranges = <0x0 0x0 0x0 0x20000000>;
 
+		flexpmu_dbg: flexpmu-dbg@204bc00 {
+			compatible = "samsung,exynos9820-flexpmu-dbg";
+			reg = <0x0204bc00 0x400>,
+			      <0x15950000 0x100>;
+			reg-names = "data", "rtc";
+		};
+
 #if 0
 		chipid@10000000 {
 			compatible = "samsung,exynos9810-chipid",
