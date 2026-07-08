@@ -473,8 +473,12 @@
 		};
 
 		pmu_system_controller: system-controller@15860000 {
-			compatible = "samsung,exynos7-pmu", "syscon";
+			compatible = "samsung,exynos9820-pmu",
+				     "samsung,exynos7-pmu",
+				     "syscon";
 			reg = <0x15860000 0x10000>;
+
+			google,pmu-intr-gen-syscon = <&pmu_intr_gen>;
 
 			poweroff: syscon-poweroff {
 				compatible = "syscon-poweroff";
@@ -500,6 +504,11 @@
 				mode-recovery = <0x12345674>;
 				mode-bootloader = <0x1234567d>;
 			};
+		};
+
+		pmu_intr_gen: syscon@15870000 {
+			compatible = "samsung,exynos9820-pmu-intr-gen", "syscon";
+			reg = <0x15870000 0x1000>;
 		};
 
 		ap2apm_mailbox: mailbox@15900000 {
