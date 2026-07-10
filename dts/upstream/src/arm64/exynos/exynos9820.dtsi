@@ -203,6 +203,37 @@
 	/* TODO: A75 PMU */
 	/* TODO: Mongoose M4 PMU */
 
+	pmu-a55 {
+		compatible = "arm,cortex-a55-pmu";
+		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+
+		interrupt-affinity = <&cpu0>,
+				     <&cpu1>,
+				     <&cpu2>,
+				     <&cpu3>;
+	};
+
+	pmu-a75 {
+		compatible = "arm,cortex-a75-pmu";
+		interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>;
+
+		interrupt-affinity = <&cpu4>,
+				     <&cpu5>;
+	};
+
+	pmu-mongoose-m4 {
+		compatible = "samsung,mongoose-pmu";
+		interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 175 IRQ_TYPE_LEVEL_HIGH>;
+
+		interrupt-affinity = <&cpu6>,
+				     <&cpu7>;
+	};
+
 	psci {
 		/* PSCI advertises 0.2+ but AFFINITY_INFO is broken */
 		compatible = "arm,psci";
