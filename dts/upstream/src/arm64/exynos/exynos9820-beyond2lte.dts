@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
 /*
- * Samsung Galaxy S10 (beyond1lte/SM-G973F) device tree source
+ * Samsung Galaxy S10+ (beyond2lte/SM-G975F) device tree source
  *
  * Copyright (c) 2026 chiffathefox <chiffathefoxx@gmail.com>
  */
@@ -9,7 +9,7 @@
 #include "exynos9820-common.dtsi"
 
 / {
-	model = "Samsung Galaxy S10 (SM-G973F)";
-	compatible = "samsung,beyond1lte", "samsung,exynos9820";
+	model = "Samsung Galaxy S10+ (SM-G975F)";
+	compatible = "samsung,beyond2lte", "samsung,exynos9820";
 	chassis-type = "handset";
 };
