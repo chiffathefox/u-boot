@@ -6,6 +6,7 @@
  */
 
 #include <dt-bindings/clock/exynos9820.h>
+#include <dt-bindings/clock/samsung,exynos9820-acpm.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/exynos9820.h>
 
@@ -70,80 +71,96 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
 			reg = <0x0>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL0>;
 			enable-method = "psci";
 			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
+			operating-points-v2 = <&cpucl0_opp_table>;
 		};
 
 		cpu1: cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
 			reg = <0x1>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL0>;
 			enable-method = "psci";
 			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
+			operating-points-v2 = <&cpucl0_opp_table>;
 		};
 
 		cpu2: cpu@2 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
 			reg = <0x2>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL0>;
 			enable-method = "psci";
 			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
+			operating-points-v2 = <&cpucl0_opp_table>;
 		};
 
 		cpu3: cpu@3 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a55";
 			reg = <0x3>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL0>;
 			enable-method = "psci";
 			cpu-idle-states = <&ananke_cpu_sleep>;
 			capacity-dmips-mhz = <272>;
 			dynamic-power-coefficient = <160>;
+			operating-points-v2 = <&cpucl0_opp_table>;
 		};
 
 		cpu4: cpu@4 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a75";
 			reg = <0x4>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL1>;
 			enable-method = "psci";
 			cpu-idle-states = <&prometheus_cpu_sleep>;
 			capacity-dmips-mhz = <531>;
 			dynamic-power-coefficient = <320>;
+			operating-points-v2 = <&cpucl1_opp_table>;
 		};
 
 		cpu5: cpu@5 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a75";
 			reg = <0x5>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL1>;
 			enable-method = "psci";
 			cpu-idle-states = <&prometheus_cpu_sleep>;
 			capacity-dmips-mhz = <531>;
 			dynamic-power-coefficient = <320>;
+			operating-points-v2 = <&cpucl1_opp_table>;
 		};
 
 		cpu6: cpu@100 {
 			device_type = "cpu";
 			compatible = "samsung,mongoose-m4";
 			reg = <0x100>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL2>;
 			enable-method = "psci";
 			cpu-idle-states = <&cheetah_cpu_sleep>;
 			capacity-dmips-mhz = <785>;
 			dynamic-power-coefficient = <760>;
+			operating-points-v2 = <&cpucl2_opp_table>;
 		};
 
 		cpu7: cpu@101 {
 			device_type = "cpu";
 			compatible = "samsung,mongoose-m4";
 			reg = <0x101>;
+			clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL2>;
 			enable-method = "psci";
 			cpu-idle-states = <&cheetah_cpu_sleep>;
 			capacity-dmips-mhz = <785>;
 			dynamic-power-coefficient = <760>;
+			operating-points-v2 = <&cpucl2_opp_table>;
 		};
 
 		idle-states {
@@ -184,10 +201,364 @@
 		};
 	};
 
+	cpucl0_opp_table: opp-table-0 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-442000000 {
+			opp-hz = /bits/ 64 <442000000>;
+			opp-microvolt = <581250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-546000000 {
+			opp-hz = /bits/ 64 <546000000>;
+			opp-microvolt = <612500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-650000000 {
+			opp-hz = /bits/ 64 <650000000>;
+			opp-microvolt = <631250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-806000000 {
+			opp-hz = /bits/ 64 <806000000>;
+			opp-microvolt = <675000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-949000000 {
+			opp-hz = /bits/ 64 <949000000>;
+			opp-microvolt = <712500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1053000000 {
+			opp-hz = /bits/ 64 <1053000000>;
+			opp-microvolt = <743750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1157000000 {
+			opp-hz = /bits/ 64 <1157000000>;
+			opp-microvolt = <775000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1300000000 {
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <818750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1456000000 {
+			opp-hz = /bits/ 64 <1456000000>;
+			opp-microvolt = <868750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1586000000 {
+			opp-hz = /bits/ 64 <1586000000>;
+			opp-microvolt = <918750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1742000000 {
+			opp-hz = /bits/ 64 <1742000000>;
+			opp-microvolt = <1000000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1846000000 {
+			opp-hz = /bits/ 64 <1846000000>;
+			opp-microvolt = <1050000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1950000000 {
+			opp-hz = /bits/ 64 <1950000000>;
+			opp-microvolt = <1093750>;
+			clock-latency-ns = <500000>;
+		};
+	};
+
+	cpucl1_opp_table: opp-table-1 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-507000000 {
+			opp-hz = /bits/ 64 <507000000>;
+			opp-microvolt = <587500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-650000000 {
+			opp-hz = /bits/ 64 <650000000>;
+			opp-microvolt = <606250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-754000000 {
+			opp-hz = /bits/ 64 <754000000>;
+			opp-microvolt = <631250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-845000000 {
+			opp-hz = /bits/ 64 <845000000>;
+			opp-microvolt = <650000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-962000000 {
+			opp-hz = /bits/ 64 <962000000>;
+			opp-microvolt = <662500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1066000000 {
+			opp-hz = /bits/ 64 <1066000000>;
+			opp-microvolt = <681250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1222000000 {
+			opp-hz = /bits/ 64 <1222000000>;
+			opp-microvolt = <725000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1404000000 {
+			opp-hz = /bits/ 64 <1404000000>;
+			opp-microvolt = <756250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1508000000 {
+			opp-hz = /bits/ 64 <1508000000>;
+			opp-microvolt = <781250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1586000000 {
+			opp-hz = /bits/ 64 <1586000000>;
+			opp-microvolt = <793750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1690000000 {
+			opp-hz = /bits/ 64 <1690000000>;
+			opp-microvolt = <818750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1794000000 {
+			opp-hz = /bits/ 64 <1794000000>;
+			opp-microvolt = <850000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1898000000 {
+			opp-hz = /bits/ 64 <1898000000>;
+			opp-microvolt = <893750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2002000000 {
+			opp-hz = /bits/ 64 <2002000000>;
+			opp-microvolt = <918750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2106000000 {
+			opp-hz = /bits/ 64 <2106000000>;
+			opp-microvolt = <956250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2210000000 {
+			opp-hz = /bits/ 64 <2210000000>;
+			opp-microvolt = <1006250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2314000000 {
+			opp-hz = /bits/ 64 <2314000000>;
+			opp-microvolt = <1056250>;
+			clock-latency-ns = <500000>;
+		};
+	};
+
+	cpucl2_opp_table: opp-table-2 {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-520000000 {
+			opp-hz = /bits/ 64 <520000000>;
+			opp-microvolt = <587500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-624000000 {
+			opp-hz = /bits/ 64 <624000000>;
+			opp-microvolt = <600000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-728000000 {
+			opp-hz = /bits/ 64 <728000000>;
+			opp-microvolt = <606250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-819000000 {
+			opp-hz = /bits/ 64 <819000000>;
+			opp-microvolt = <618750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-936000000 {
+			opp-hz = /bits/ 64 <936000000>;
+			opp-microvolt = <637500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1040000000 {
+			opp-hz = /bits/ 64 <1040000000>;
+			opp-microvolt = <643750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1144000000 {
+			opp-hz = /bits/ 64 <1144000000>;
+			opp-microvolt = <675000>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1248000000 {
+			opp-hz = /bits/ 64 <1248000000>;
+			opp-microvolt = <687500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1378000000 {
+			opp-hz = /bits/ 64 <1378000000>;
+			opp-microvolt = <706250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1456000000 {
+			opp-hz = /bits/ 64 <1456000000>;
+			opp-microvolt = <718750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1560000000 {
+			opp-hz = /bits/ 64 <1560000000>;
+			opp-microvolt = <743750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1664000000 {
+			opp-hz = /bits/ 64 <1664000000>;
+			opp-microvolt = <768750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1820000000 {
+			opp-hz = /bits/ 64 <1820000000>;
+			opp-microvolt = <793750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-1976000000 {
+			opp-hz = /bits/ 64 <1976000000>;
+			opp-microvolt = <837500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2080000000 {
+			opp-hz = /bits/ 64 <2080000000>;
+			opp-microvolt = <868750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2236000000 {
+			opp-hz = /bits/ 64 <2236000000>;
+			opp-microvolt = <906250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2340000000 {
+			opp-hz = /bits/ 64 <2340000000>;
+			opp-microvolt = <931250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2470000000 {
+			opp-hz = /bits/ 64 <2470000000>;
+			opp-microvolt = <987500>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2530000000 {
+			opp-hz = /bits/ 64 <2530000000>;
+			opp-microvolt = <1018750>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2600000000 {
+			opp-hz = /bits/ 64 <2600000000>;
+			opp-microvolt = <1056250>;
+			clock-latency-ns = <500000>;
+		};
+
+		opp-2730000000 {
+			opp-hz = /bits/ 64 <2730000000>;
+			opp-microvolt = <1093750>;
+			clock-latency-ns = <500000>;
+		};
+	};
+
 	firmware {
 		acpm_ipc: power-management {
 			compatible = "samsung,exynos9820-acpm-ipc";
 			#clock-cells = <1>;
+
+			/* Provide boot defaults since FREQ_GET is broken */
+			assigned-clocks = <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_MIF>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_INT>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL0>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL1>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CPUCL2>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_NPU>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_DISP>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_SCORE>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_AUD>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVS_CP>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_G3D>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_INTCAM>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_CAM>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_IVA>,
+					  <&acpm_ipc EXYNOS9820_CLK_ACPM_DVFS_MFC>;
+			assigned-clock-rates = <2093000000>,
+					       <534000000>,
+					       <1053000000>,
+					       <1222000000>,
+					       <1378000000>,
+					       <167000000>,
+					       <534000000>,
+					       <25000000>,
+					       <295000000>,
+					       <1066000000>,
+					       <156000000>,
+					       <630000000>,
+					       <650000000>,
+					       <56000000>,
+					       <134000000>;
+
 			mboxes = <&ap2apm_mailbox>;
 			shmem = <&apm_sram>;
 		};
