@@ -11,7 +11,7 @@
 / {
 	thermal-zones {
 		cpucl0-thermal {
-			polling-delay-passive = <250>;
+			polling-delay-passive = <50>;
 			polling-delay = <1000>;
 			thermal-sensors = <&tmu_top EXYNOS9820_TMU_TOP_CPUCL0>;
 
@@ -23,7 +23,7 @@
 				};
 
 				little_mitigate: little-mitigate {
-					temperature = <85000>;
+					temperature = <80000>;
 					hysteresis = <5000>;
 					type = "passive";
 				};
@@ -44,16 +44,16 @@
 			cooling-maps {
 				map0 {
 					trip = <&little_mitigate>;
-					cooling-device = <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-							 <&cpu1 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-							 <&cpu2 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-							 <&cpu3 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+					cooling-device = <&cpu0 2 THERMAL_NO_LIMIT>,
+							 <&cpu1 2 THERMAL_NO_LIMIT>,
+							 <&cpu2 2 THERMAL_NO_LIMIT>,
+							 <&cpu3 2 THERMAL_NO_LIMIT>;
 				};
 			};
 		};
 
 		cpucl1-thermal {
-			polling-delay-passive = <250>;
+			polling-delay-passive = <50>;
 			polling-delay = <1000>;
 			thermal-sensors = <&tmu_top EXYNOS9820_TMU_TOP_CPUCL1>;
 
@@ -66,7 +66,7 @@
 
 				mid_mitigate: mid-mitigate {
 					temperature = <83000>;
-					hysteresis = <2000>;
+					hysteresis = <5000>;
 					type = "passive";
 				};
 
@@ -86,14 +86,14 @@
 			cooling-maps {
 				map0 {
 					trip = <&mid_mitigate>;
-					cooling-device = <&cpu4 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-							 <&cpu5 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
+					cooling-device = <&cpu4 2 THERMAL_NO_LIMIT>,
+							 <&cpu5 2 THERMAL_NO_LIMIT>;
 			       };
 			};
 		};
 
 		cpucl2-thermal {
-			polling-delay-passive = <250>;
+			polling-delay-passive = <25>;
 			polling-delay = <1000>;
 			thermal-sensors = <&tmu_top EXYNOS9820_TMU_TOP_CPUCL2>;
 
@@ -106,7 +106,7 @@
 
 				big_mitigate: big-mitigate {
 					temperature = <83000>;
-					hysteresis = <2000>;
+					hysteresis = <5000>;
 					type = "passive";
 				};
 
@@ -138,9 +138,9 @@
 
 				map1 {
 					trip = <&big_hotplug>;
-					/* TODO: use idle injection instead */
-					cooling-device = <&cpu6 THERMAL_NO_LIMIT 20>,
-							 <&cpu7 THERMAL_NO_LIMIT 20>;
+					/* TODO: use idle injection instead of downscaling to 520MHz */
+					cooling-device = <&cpu6 18 18>,
+							 <&cpu7 18 18>;
 				};
 			};
 		};

@@ -517,17 +517,11 @@
 			clock-latency-ns = <500000>;
 		};
 
-		opp-2600000000 {
-			opp-hz = /bits/ 64 <2600000000>;
-			opp-microvolt = <1056250>;
-			clock-latency-ns = <500000>;
-		};
-
-		opp-2730000000 {
-			opp-hz = /bits/ 64 <2730000000>;
-			opp-microvolt = <1093750>;
-			clock-latency-ns = <500000>;
-		};
+		/*
+		 * Mongoose cores can go all the way to 2.73GHz,
+		 * but trying to run all 8 cores at max frequency trips hw
+		 * thermal/overcurrent protection faster than the TMU can react
+		 */
 	};
 
 	firmware {
