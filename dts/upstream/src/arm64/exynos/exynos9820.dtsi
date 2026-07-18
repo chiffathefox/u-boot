@@ -668,17 +668,11 @@
 				     <GIC_SPI 477 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
-		tmu_clk: tmu-clk {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-output-names = "tmu-clk";
-			clock-frequency = <26000000>;
-		};
-
 		tmu_top: thermal-sensor@10090000 {
 			compatible = "samsung,exynos9820-tmu-top";
 			reg = <0x10090000 0x800>;
-			clocks = <&tmu_clk>;
+			clocks = <&cmu_peris CLK_GOUT_PERIS_TMU_TOP_PCLK>,
+				 <&cmu_peris CLK_GOUT_PERIS_TMU_SUB_PCLK>;
 			interrupts = <GIC_SPI 478 IRQ_TYPE_LEVEL_HIGH>;
 			samsung,acpm-ipc = <&acpm_ipc>;
 			#thermal-sensor-cells = <1>;
