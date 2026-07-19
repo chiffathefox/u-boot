@@ -715,6 +715,8 @@
 		pinctrl_peric0: pinctrl@10430000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x10430000 0x1000>;
+			clocks = <&cmu_peric0 CLK_GOUT_PERIC0_GPIO_PERIC0_PCLK>;
+			clock-names = "pclk";
 			interrupts = <GIC_SPI 380 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
@@ -847,6 +849,8 @@
 		pinctrl_fsys1: pinctrl@13c40000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x13c40000 0x1000>;
+			clocks = <&cmu_fsys1 CLK_GOUT_FSYS1_GPIO_FSYS1_PCLK>;
+			clock-names = "pclk";
 			interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
