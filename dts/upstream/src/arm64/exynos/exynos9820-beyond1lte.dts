@@ -12,4 +12,15 @@
 	model = "Samsung Galaxy S10 (SM-G973F)";
 	compatible = "samsung,beyond1lte", "samsung,exynos9820";
 	chassis-type = "handset";
+
+	chosen {
+		framebuffer0: framebuffer@ca000000 {
+			compatible = "simple-framebuffer";
+			reg = <0x0 0xca000000 (1440 * 3040 * 4)>;
+			width = <1440>;
+			height = <3040>;
+			stride = <(1440 * 4)>;
+			format = "a8r8g8b8";
+		};
+	};
 };
