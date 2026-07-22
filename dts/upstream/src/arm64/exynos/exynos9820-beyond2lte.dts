@@ -21,6 +21,13 @@
 			height = <3040>;
 			stride = <(1440 * 4)>;
 			format = "a8r8g8b8";
+			panel = <&panel>;
+
+			/* Dummy panel for simple-framebuffer dimension info */
+			panel: dummy-panel {
+				width-mm = <70>;
+				height-mm = <147>;
+			};
 		};
 	};
 };
