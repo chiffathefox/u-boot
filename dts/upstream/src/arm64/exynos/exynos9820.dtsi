@@ -1062,6 +1062,78 @@
 			clocks = <&oscclk>;
 		};
 
+		cmu_mif0: clock-controller@1bc00000 {
+			compatible = "samsung,exynos9820-cmu-mif";
+			reg = <0x1bc00000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_MIF_BUSP>;
+			samsung,sysreg = <&sysreg_mif0>;
+		};
+
+		sysreg_mif0: syscon@1bc20000 {
+			compatible = "samsung,exynos9820-mif0-sysreg", "syscon";
+			reg = <0x1bc20000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
+		cmu_mif1: clock-controller@1bd00000 {
+			compatible = "samsung,exynos9820-cmu-mif";
+			reg = <0x1bd00000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_MIF_BUSP>;
+			samsung,sysreg = <&sysreg_mif1>;
+		};
+
+		sysreg_mif1: syscon@1bd20000 {
+			compatible = "samsung,exynos9820-mif1-sysreg", "syscon";
+			reg = <0x1bd20000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
+		cmu_mif2: clock-controller@1be00000 {
+			compatible = "samsung,exynos9820-cmu-mif";
+			reg = <0x1be00000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_MIF_BUSP>;
+			samsung,sysreg = <&sysreg_mif2>;
+		};
+
+		sysreg_mif2: syscon@1be20000 {
+			compatible = "samsung,exynos9820-mif2-sysreg", "syscon";
+			reg = <0x1be20000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
+		cmu_mif3: clock-controller@1bf00000 {
+			compatible = "samsung,exynos9820-cmu-mif";
+			reg = <0x1bf00000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_MIF_BUSP>;
+			samsung,sysreg = <&sysreg_mif3>;
+		};
+
+		sysreg_mif3: syscon@1bf20000 {
+			compatible = "samsung,exynos9820-mif3-sysreg", "syscon";
+			reg = <0x1bf20000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
 		/* TODO: interrupts, add driver support */
 		/* TODO: pinctrl */
 		/* TODO: pmu_system_controller */
