@@ -1017,6 +1017,24 @@
 			reg = <0x18c60000 0x1000>;
 		};
 
+		cmu_busc: clock-controller@1a200000 {
+			compatible = "samsung,exynos9820-cmu-busc";
+			reg = <0x1a200000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_BUSC_BUS>;
+			samsung,sysreg = <&sysreg_busc>;
+		};
+
+		sysreg_busc: syscon@1a220000 {
+			compatible = "samsung,exynos9820-busc-sysreg", "syscon";
+			reg = <0x1a220000 0x10000>;
+			clocks = <&cmu_busc CLK_GOUT_BUSC_SYSREG_BUSC_PCLK>;
+		};
+
 		cmu_top: clock-controller@1a240000 {
 			compatible = "samsung,exynos9820-cmu-top";
 			reg = <0x1a240000 0x10000>;
