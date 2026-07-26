@@ -1150,6 +1150,22 @@
 			samsung,sysreg = <&sysreg_cpucl0>;
 		};
 
+		sysreg_cpucl2: syscon@1d100000 {
+			compatible = "samsung,exynos9820-cpucl2-sysreg", "syscon";
+			reg = <0x1d100000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
+		cmu_cpucl2: clock-controller@1d120000 {
+			compatible = "samsung,exynos9820-cmu-cpucl2";
+			reg = <0x1d120000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk";
+			clocks = <&oscclk>;
+			samsung,sysreg = <&sysreg_cpucl2>;
+		};
+
 		/* TODO: interrupts, add driver support */
 		/* TODO: pinctrl */
 		/* TODO: pmu_system_controller */
