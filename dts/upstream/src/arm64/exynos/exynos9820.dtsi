@@ -785,6 +785,24 @@
 			};
 		};
 
+		cmu_peric1: clock-controller@10800000 {
+			compatible = "samsung,exynos9820-cmu-peric1";
+			reg = <0x10800000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_PERIC1_BUS>;
+			samsung,sysreg = <&sysreg_peric1>;
+		};
+
+		sysreg_peric1: syscon@10820000 {
+			compatible = "samsung,exynos9820-peric1-sysreg", "syscon";
+			reg = <0x10820000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
 		pinctrl_peric1: pinctrl@10830000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x10830000 0x1000>;
