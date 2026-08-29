@@ -1048,6 +1048,22 @@
 			};
 		};
 
+		cmu_g3d: clock-controller@18400000 {
+			compatible = "samsung,exynos9820-cmu-g3d";
+			reg = <0x18400000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk";
+			clocks = <&oscclk>;
+			samsung,sysreg = <&sysreg_g3d>;
+		};
+
+		sysreg_g3d: syscon@18420000 {
+			compatible = "samsung,exynos9820-g3d-sysreg", "syscon";
+			reg = <0x18420000 0x10000>;
+			/* Clock omitted to keep the clock driver simple */
+		};
+
 		pinctrl_aud: pinctrl@18c60000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x18c60000 0x1000>;
