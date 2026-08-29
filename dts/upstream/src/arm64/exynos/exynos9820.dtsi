@@ -1069,6 +1069,24 @@
 			reg = <0x18c60000 0x1000>;
 		};
 
+		cmu_dpu: clock-controller@19000000 {
+			compatible = "samsung,exynos9820-cmu-dpu";
+			reg = <0x19000000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_top CLK_DOUT_CMU_DPU_BUS>;
+			samsung,sysreg = <&sysreg_dpu>;
+		};
+
+		sysreg_dpu: syscon@19010000 {
+			compatible = "samsung,exynos9820-dpu-sysreg", "syscon";
+			reg = <0x19010000 0x10000>;
+			clocks = <&cmu_dpu CLK_GOUT_DPU_SYSREG_DPU_PCLK>;
+		};
+
 		sysreg_core: syscon@1a020000 {
 			compatible = "samsung,exynos9820-core-sysreg", "syscon";
 			reg = <0x1a020000 0x10000>;
