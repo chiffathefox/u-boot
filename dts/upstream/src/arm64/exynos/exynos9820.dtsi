@@ -1039,9 +1039,29 @@
 			#mbox-cells = <0>;
 		};
 
+		cmu_cmgp: clock-controller@15c00000 {
+			compatible = "samsung,exynos9820-cmu-cmgp";
+			reg = <0x15c00000 0x10000>;
+			#clock-cells = <1>;
+
+			clock-names = "oscclk",
+				      "bus";
+			clocks = <&oscclk>,
+				 <&cmu_apm CLK_DOUT_CMU_CMGP_BUS>;
+			samsung,sysreg = <&sysreg_cmgp>;
+		};
+
+		sysreg_cmgp: syscon@15c20000 {
+			compatible = "samsung,exynos9820-cmgp-sysreg", "syscon";
+			reg = <0x15c20000 0x10000>;
+			clocks = <&cmu_cmgp CLK_GOUT_CMGP_SYSREG_CMGP_PCLK>;
+		};
+
 		pinctrl_cmgp: pinctrl@15c30000 {
 			compatible = "samsung,exynos9820-pinctrl";
 			reg = <0x15c30000 0x1000>;
+			clocks = <&cmu_cmgp CLK_GOUT_CMGP_GPIO_CMGP_PCLK>;
+			clock-names = "pclk";
 
 			wakeup-interrupt-controller {
 				compatible = "samsung,exynos7-wakeup-eint";
