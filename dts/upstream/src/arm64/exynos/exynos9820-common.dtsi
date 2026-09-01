@@ -12,6 +12,13 @@
 #include <dt-bindings/soc/samsung,exynos-usi.h>
 
 / {
+	battery: battery {
+		compatible = "simple-battery";
+		over-voltage-threshold-microvolt = <4500000>;
+		voltage-min-design-microvolt = <3480000>;
+		voltage-max-design-microvolt = <4350000>;
+	};
+
 	chosen {
 		#address-cells = <2>;
 		#size-cells = <1>;
@@ -161,6 +168,40 @@
 	};
 };
 
+&hsi2c45 {
+	clock-frequency = <400000>;
+	status = "okay";
+
+	fuel-gauge@36 {
+		reg = <0x36>;
+		compatible = "maxim,max77705-battery";
+		power-supplies = <&max77705_charger>;
+		maxim,rsns-microohm = <5000>;
+		interrupt-parent = <&max77705>;
+		interrupts = <2>;
+	};
+
+	max77705: pmic@66 {
+		compatible = "maxim,max77705";
+		reg = <0x66>;
+
+		interrupts-extended = <&gpa1 6 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		pinctrl-0 = <&pmic_int>;
+		pinctrl-names = "default";
+	};
+
+	max77705_charger: charger@69 {
+		reg = <0x69>;
+		compatible = "maxim,max77705-charger";
+		monitored-battery = <&battery>;
+		interrupt-parent = <&max77705>;
+		interrupts = <0>;
+	};
+};
+
 &oscclk {
 	clock-frequency = <26000000>;
 };
@@ -194,6 +235,13 @@
 		samsung,pin-drv = <EXYNOS5433_PIN_DRV_FAST_SR1>;
 	};
 
+	pmic_int: pmic-int {
+		samsung,pins = "gpa1-6";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_EINT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS7_PIN_DRV_LV1>;
+	};
+
 	ts_int: ts-int-pins {
 		samsung,pins = "gpa1-0";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_EINT>;
@@ -217,6 +265,11 @@
 };
 
 &usi3 {
+	status = "okay";
+	samsung,mode = <USI_MODE_I2C>;
+};
+
+&usi_cmgp3 {
 	status = "okay";
 	samsung,mode = <USI_MODE_I2C>;
 };

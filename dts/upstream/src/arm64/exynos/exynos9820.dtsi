@@ -1068,6 +1068,42 @@
 			};
 		};
 
+		usi_cmgp3: usi@15d600c0 {
+			compatible = "samsung,exynos850-usi";
+			reg = <0x15d600c0 0x20>;
+			ranges;
+
+			clock-names = "pclk",
+				      "ipclk";
+			clocks = <&cmu_cmgp CLK_GOUT_CMGP_USI_CMGP3_PCLK>,
+				 <&cmu_cmgp CLK_GOUT_CMGP_USI_CMGP3_IPCLK>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			samsung,sysreg = <&sysreg_cmgp 0x2030>;
+			status = "disabled";
+
+			hsi2c45: i2c@15d60000 {
+				compatible = "samsung,exynosautov9-hsi2c";
+				reg = <0x15d60000 0xc0>;
+
+				clock-names = "hsi2c",
+					      "hsi2c_pclk";
+				clocks = <&cmu_cmgp CLK_GOUT_CMGP_USI_CMGP3_IPCLK>,
+					 <&cmu_cmgp CLK_GOUT_CMGP_USI_CMGP3_PCLK>;
+
+				interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
+				pinctrl-0 = <&hsi2c45_bus>;
+				pinctrl-names = "default";
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				status = "disabled";
+			};
+		};
+
 		cmu_g3d: clock-controller@18400000 {
 			compatible = "samsung,exynos9820-cmu-g3d";
 			reg = <0x18400000 0x10000>;

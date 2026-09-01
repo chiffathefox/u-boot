@@ -451,6 +451,13 @@
 		interrupt-parent = <&gic>;
 		interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
 	};
+
+	hsi2c45_bus: hsi2c45-bus-pins {
+		samsung,pins = "gpm12-0", "gpm13-0";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_2>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS7_PIN_DRV_LV1>;
+	};
 };
 
 &pinctrl_fsys0 {

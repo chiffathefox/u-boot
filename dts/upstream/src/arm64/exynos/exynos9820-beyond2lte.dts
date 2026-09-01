@@ -31,3 +31,9 @@
 		};
 	};
 };
+
+&battery {
+	compatible = "simple-battery";
+	constant-charge-current-max-microamp = <2850000>;
+	charge-full-design-microamp-hours = <4000000>;
+};
