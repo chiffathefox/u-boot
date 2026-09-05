@@ -124,6 +124,19 @@
 		compatible = "regulator-fixed";
 		regulator-name = "dummy_reg";
 	};
+
+	vib_regulator: gpio-regulator {
+		compatible = "regulator-fixed";
+
+		regulator-name = "haptic";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+
+		gpio = <&gpg1 7 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+
+		regulator-boot-on;
+	};
 };
 
 &acpm_ipc {
@@ -191,6 +204,12 @@
 
 		pinctrl-0 = <&pmic_int>;
 		pinctrl-names = "default";
+
+		haptic {
+			compatible = "maxim,max77705-haptic";
+			haptic-supply = <&vib_regulator>;
+			pwms = <&pwm 1 48828 0>;
+		};
 	};
 
 	max77705_charger: charger@69 {
@@ -248,6 +267,10 @@
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 		samsung,pin-drv = <EXYNOS7_PIN_DRV_LV1>;
 	};
+};
+
+&pwm {
+	status = "okay";
 };
 
 &serial0 {

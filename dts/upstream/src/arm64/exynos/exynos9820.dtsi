@@ -785,6 +785,16 @@
 			};
 		};
 
+		pwm: pwm@10510000 {
+			compatible = "samsung,exynos4210-pwm";
+			reg = <0x10510000 0x1000>;
+			samsung,pwm-outputs = <0>, <1>, <2>, <3>, <4>;
+			#pwm-cells = <3>;
+			clocks = <&oscclk>;
+			clock-names = "timers";
+			status = "disabled";
+		};
+
 		cmu_peric1: clock-controller@10800000 {
 			compatible = "samsung,exynos9820-cmu-peric1";
 			reg = <0x10800000 0x10000>;
