@@ -1035,6 +1035,129 @@
 			};
 		};
 
+		pd_aud: power-domain@15861900 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861900 0x20>;
+			#power-domain-cells = <0>;
+			label = "AUD";
+		};
+
+		pd_npu0: power-domain@15861d00 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861d00 0x20>;
+			#power-domain-cells = <0>;
+			label = "NPU0";
+		};
+
+		pd_npu1: power-domain@15861d80 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861d80 0x20>;
+			#power-domain-cells = <0>;
+			power-domains = <&pd_npu0>;
+			label = "NPU1";
+		};
+
+		pd_dpu: power-domain@15861e00 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861e00 0x20>;
+			#power-domain-cells = <0>;
+			label = "DPU";
+
+			/*
+			 * Disabled until a proper display panel is implemented.
+			 * Make sure to mark pd_isppre as a child after enabling.
+			 */
+			status = "disabled";
+		};
+
+		pd_dspm: power-domain@15861e80 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861e80 0x20>;
+			#power-domain-cells = <0>;
+			label = "DSPM";
+		};
+
+		pd_dsps: power-domain@15861f00 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15861f00 0x20>;
+			#power-domain-cells = <0>;
+			power-domains = <&pd_dspm>;
+			label = "DSPS";
+		};
+
+		pd_embedded_g3d: power-domain@15862100 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862100 0x20>;
+			#power-domain-cells = <0>;
+			label = "G3D";
+		};
+
+		pd_fsys0a: power-domain@15862200 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862200 0x20>;
+			#power-domain-cells = <0>;
+			label = "FSYS0A";
+			status = "disabled";
+		};
+
+		pd_g2d: power-domain@15862300 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862300 0x20>;
+			#power-domain-cells = <0>;
+			label = "G2D";
+		};
+
+		pd_isphq: power-domain@15862400 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862400 0x20>;
+			#power-domain-cells = <0>;
+			label = "ISPHQ";
+		};
+
+		pd_isplp: power-domain@15862480 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862480 0x20>;
+			#power-domain-cells = <0>;
+			label = "ISPLP";
+		};
+
+		pd_isppre: power-domain@15862500 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862500 0x20>;
+			#power-domain-cells = <0>;
+			/* power-domains = <&pd_dpu>; */
+			label = "ISPPRE";
+		};
+
+		pd_iva: power-domain@15862580 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862580 0x20>;
+			#power-domain-cells = <0>;
+			label = "IVA";
+		};
+
+		pd_mfc: power-domain@15862600 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862600 0x20>;
+			#power-domain-cells = <0>;
+			label = "MFC";
+		};
+
+		pd_vts: power-domain@15862a80 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862a80 0x20>;
+			#power-domain-cells = <0>;
+			label = "VTS";
+		};
+
+		pd_vra2: power-domain@15862b00 {
+			compatible = "samsung,exynos9820-pd";
+			reg = <0x15862b00 0x20>;
+			#power-domain-cells = <0>;
+			power-domains = <&pd_isplp>;
+			label = "VRA2";
+		};
+
 		pmu_intr_gen: syscon@15870000 {
 			compatible = "samsung,exynos9820-pmu-intr-gen", "syscon";
 			reg = <0x15870000 0x1000>;
